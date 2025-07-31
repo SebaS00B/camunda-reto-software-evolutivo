@@ -1,0 +1,9 @@
+<form cam-form-validate>
+  <label>Escoja el pais:</label>
+  <select cam-variable-name="pais" cam-options="${ execution.getVariable('paises') }" required></select>
+  <label>Fecha:</label>
+  <input cam-variable-name="fecha" type="date" required />
+  <label>Descripción:</label>
+  <input cam-variable-name="descripcion" type="text" minlength="5" required />
+  <button type="submit">Enviar</button>
+</form>
