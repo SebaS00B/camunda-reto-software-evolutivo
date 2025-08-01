@@ -1,7 +1,5 @@
 package com.sebas.prueba.tecnica.software.evolutivo.pruebatecnica.delegate;
 
-
-
 import java.util.Date;
 
 import org.camunda.bpm.engine.delegate.DelegateExecution;

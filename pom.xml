@@ -50,22 +50,29 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
 
 		<!-- ============================================ -->
 		<!-- NUEVAS DEPENDENCIAS DE CAMUNDA BPM         -->
 		<!-- ============================================ -->
+		 <!-- Core de Camunda BPM -->
 		<dependency>
 			<groupId>org.camunda.bpm.springboot</groupId>
 			<artifactId>camunda-bpm-spring-boot-starter</artifactId>
 			<version>${camunda.version}</version>
 		</dependency>
 
+		<!-- UI completa de Camunda (Tasklist, Cockpit, Admin) -->
 		<dependency>
 			<groupId>org.camunda.bpm.springboot</groupId>
 			<artifactId>camunda-bpm-spring-boot-starter-webapp</artifactId>
 			<version>${camunda.version}</version>
 		</dependency>
-		
+
+		<!-- API REST de Camunda (opcional) -->
 		<dependency>
 			<groupId>org.camunda.bpm.springboot</groupId>
 			<artifactId>camunda-bpm-spring-boot-starter-rest</artifactId>

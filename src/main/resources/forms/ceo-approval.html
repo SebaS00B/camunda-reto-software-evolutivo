@@ -1,0 +1,58 @@
+<form class="form-horizontal" role="form">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h4>Aprobación de ceo - ID: {{requestId}}</h4>
+        </div>
+        <div class="panel-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <strong>Descripción:</strong> {{description}}<br/>
+                    <strong>Monto:</strong> ${{amount | currency}}<br/>
+                    <strong>Categoría:</strong> {{category}}<br/>
+                    <strong>Urgencia:</strong> {{urgency}}
+                </div>
+                <div class="col-md-6">
+                    <strong>Solicitante:</strong> {{requesterEmail}}<br/>
+                    <strong>Fecha:</strong> {{expectedDate | date}}<br/>
+                    <strong>Proveedor:</strong> {{supplier}}
+                </div>
+            </div>
+            
+            <hr/>
+            
+            <div class="form-group">
+                <label class="control-label col-md-3">Decisión*</label>
+                <div class="col-md-6">
+                    <label class="radio-inline">
+                        <input cam-variable-name="approved" 
+                               cam-variable-type="Boolean" 
+                               type="radio" 
+                               value="true" required> Aprobar
+                    </label>
+                    <label class="radio-inline">
+                        <input cam-variable-name="approved" 
+                               cam-variable-type="Boolean" 
+                               type="radio" 
+                               value="false" required> Rechazar
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="control-label col-md-3">Comentarios</label>
+                <div class="col-md-8">
+                    <textarea cam-variable-name="approvalComments" 
+                              cam-variable-type="String" 
+                              class="form-control" 
+                              rows="3" 
+                              placeholder="Agrega comentarios sobre tu decisión..."></textarea>
+                </div>
+            </div>
+
+            <input cam-variable-name="approvedBy" 
+                   cam-variable-type="String" 
+                   type="hidden" 
+                   value="ceo@company.com" />
+        </div>
+    </div>
+</form>
