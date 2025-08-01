@@ -7,7 +7,8 @@ import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.TaskService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.task.Task;
-
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.sebas.prueba.tecnica.software.evolutivo.pruebatecnica.dto.SupplierDto;
 import com.sebas.prueba.tecnica.software.evolutivo.pruebatecnica.entities.PurchaseRequest;
+import com.sebas.prueba.tecnica.software.evolutivo.pruebatecnica.service.CurrencyService;
 import com.sebas.prueba.tecnica.software.evolutivo.pruebatecnica.service.ExternalServiceClient;
 import com.sebas.prueba.tecnica.software.evolutivo.pruebatecnica.service.PurchaseRequestService;
 
@@ -34,22 +36,56 @@ public class ProcessController {
     private final TaskService taskService;
     private final PurchaseRequestService purchaseRequestService;
     private final ExternalServiceClient externalServiceClient;
+    @Autowired
+    private CurrencyService currencyService;
 
     @GetMapping("/create")
     public String showCreateForm(Model model) {
         log.info("🔥 Mostrando formulario de creación de solicitud");
 
         List<SupplierDto> suppliers = externalServiceClient.getSuppliers();
-        List<String> currencies = externalServiceClient.getCurrencies();
+        
 
         model.addAttribute("suppliers", suppliers);
-        model.addAttribute("currencies", currencies);
+        model.addAttribute("currencies", currencyService.getCurrencyOptions());
+        model.addAttribute("purchaseRequest", new PurchaseRequest());
         model.addAttribute("categories", PurchaseRequest.PurchaseCategory.values());
         model.addAttribute("priorities", PurchaseRequest.Priority.values());
 
         return "process/create-purchase-request";
     }
+@PostMapping("/start-api")
+@ResponseBody
+public ResponseEntity<?> startProcessApi(@RequestBody @Valid PurchaseRequest request) {
+    try {
+        log.info("🚀 Iniciando proceso Purchase Request para: {}", request.getRequesterName());
 
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("requesterName", request.getRequesterName());
+        variables.put("requesterEmail", request.getRequesterEmail());
+        variables.put("department", request.getDepartment());
+        variables.put("description", request.getDescription());
+        variables.put("totalAmount", request.getTotalAmount().doubleValue());
+        variables.put("currency", request.getCurrency());
+        variables.put("category", request.getCategory().name());
+        variables.put("priority", request.getPriority().name());
+        variables.put("supplierName", request.getSupplierName());
+        variables.put("supplierEmail", request.getSupplierEmail());
+
+        ProcessInstance instance = runtimeService.startProcessInstanceByKey("purchase-request-process", variables);
+
+        return ResponseEntity.ok(Map.of(
+            "success", true,
+            "processInstanceId", instance.getId()
+        ));
+    } catch (Exception e) {
+        log.error("❌ Error iniciando proceso: {}", e.getMessage(), e);
+        return ResponseEntity.status(500).body(Map.of(
+            "success", false,
+            "error", e.getMessage()
+        ));
+    }
+}
     @PostMapping("/start")
     public String startProcess(@Valid @ModelAttribute PurchaseRequest request,
                                BindingResult bindingResult,

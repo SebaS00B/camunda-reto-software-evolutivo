@@ -1,0 +1,34 @@
+/* Archivo: custom-style.css */
+
+/* Validación: colores de bordes en inputs */
+.is-valid {
+    border-color: #198754 !important;
+}
+.is-invalid {
+    border-color: #dc3545 !important;
+}
+
+/* Contador de caracteres: fuente más destacada */
+#descriptionCount {
+    font-weight: bold;
+}
+
+/* Espaciado para iconos en botones */
+.btn .fa-spinner {
+    margin-right: 0.5rem;
+}
+
+/* Navbar brand: icono con margen */
+.navbar-brand .fas {
+    margin-right: 0.5rem;
+}
+
+/* Modal de confirmación: ajustar ancho máximo */
+.modal-dialog {
+    max-width: 500px;
+}
+
+/* Ajuste de sombras en tarjetas */
+.card.shadow {
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+}

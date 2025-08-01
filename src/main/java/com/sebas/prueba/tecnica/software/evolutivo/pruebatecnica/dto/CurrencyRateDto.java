@@ -5,7 +5,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
+
+
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * DTO para respuesta de monedas (Exchange Rate API)
  */
@@ -14,18 +17,18 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @AllArgsConstructor
 @Builder
 public class CurrencyRateDto {
-    
+
     private String base;
     private String date;
     private Long timestamp;
-    private Object rates; // Map dinámico de tasas
-    
+    private Object rates; // ← Este será casteado a Map<String, Double>
+
     @JsonProperty("success")
     private Boolean success;
-    
+
     @JsonProperty("error")
     private ErrorDto error;
-    
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
@@ -34,4 +37,5 @@ public class CurrencyRateDto {
         private String type;
         private String info;
     }
+    
 }

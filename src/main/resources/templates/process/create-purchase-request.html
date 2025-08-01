@@ -84,10 +84,10 @@
                                     </label>
                                     <select class="form-select" id="priority" name="priority" required>
                                         <option value="">Seleccionar...</option>
-                                        <option value="LOW">🟢 Baja</option>
-                                        <option value="MEDIUM" selected>🟡 Media</option>
-                                        <option value="HIGH">🟠 Alta</option>
-                                        <option value="URGENT">🔴 Urgente</option>
+                                        <option value="LOW">Baja</option>
+                                        <option value="NORMAL">Normal</option>
+                                        <option value="HIGH">Alta</option>
+                                        <option value="URGENT">Urgente</option>
                                     </select>
                                     <div class="invalid-feedback">
                                         Seleccione una prioridad
@@ -440,46 +440,46 @@
         }
 
         function submitForm() {
-            const $submitBtn = $('#submitBtn');
-            $submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Procesando...');
+    const $submitBtn = $('#submitBtn');
+    $submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Procesando...');
 
-            const formData = {
-                title: $('#title').val(),
-                description: $('#description').val(),
-                totalAmount: parseFloat($('#totalAmount').val()),
-                currency: $('#currency').val(),
-                supplier: $('#supplier').val(),
-                category: $('#category').val(),
-                requiredDate: $('#requiredDate').val() + 'T00:00:00',
-                priority: $('#priority').val(),
-                requestor: $('#requestor').val(),
-                requestorEmail: $('#requestorEmail').val(),
-                department: $('#department').val()
-            };
+    const formData = {
+        requesterName: $('#requestor').val(),              // 👈 CORRECTO
+        requesterEmail: $('#requestorEmail').val(),        // 👈 CORRECTO
+        department: $('#department').val(),                // 👈 CORRECTO
+        description: $('#description').val(),              // 👈 CORRECTO
+        totalAmount: parseFloat($('#totalAmount').val()),  // 👈 CORRECTO
+        currency: $('#currency').val(),                    // 👈 CORRECTO (USD, EUR, etc.)
+        category: $('#category').val(),                    // 👈 Debe ser uno de: OFFICE_SUPPLIES, IT_HARDWARE, ...
+        priority: $('#priority').val(),                    // 👈 LOW, NORMAL, HIGH, URGENT
+        supplierName: $('#supplier').val(),                // 👈 CORRECTO
+        supplierEmail: $('#supplierEmail').val()           // 👈 CORRECTO
+    };
 
-            $.ajax({
-                url: '/process/start',
-                method: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(formData),
-                success: function(response) {
-                    if (response.success) {
-                        $('#modalRequestCode').text(response.requestCode);
-                        $('#modalProcessId').text(response.processInstanceId);
-                        $('#confirmModal').modal('show');
-                    } else {
-                        showAlert('danger', '❌ Error', response.message);
-                    }
-                },
-                error: function(xhr) {
-                    const error = xhr.responseJSON || {message: 'Error interno del servidor'};
-                    showAlert('danger', '❌ Error', error.message);
-                },
-                complete: function() {
-                    $submitBtn.prop('disabled', false).html('<i class="fas fa-paper-plane me-2"></i>Iniciar Proceso');
-                }
-            });
+    $.ajax({
+        url: '/process/start-api',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(formData),
+        success: function (response) {
+            if (response.success) {
+                $('#modalRequestCode').text(response.requestCode || 'N/A');
+                $('#modalProcessId').text(response.processInstanceId);
+                $('#confirmModal').modal('show');
+            } else {
+                showAlert('danger', '❌ Error', response.message);
+            }
+        },
+        error: function (xhr) {
+            const error = xhr.responseJSON || { message: 'Error interno del servidor' };
+            showAlert('danger', '❌ Error', error.message || JSON.stringify(error));
+        },
+        complete: function () {
+            $submitBtn.prop('disabled', false).html('<i class="fas fa-paper-plane me-2"></i>Iniciar Proceso');
         }
+    });
+}
+
 
         function loadExternalData() {
             // Cargar proveedores si el select está vacío
