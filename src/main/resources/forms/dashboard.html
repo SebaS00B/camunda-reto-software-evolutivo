@@ -1,0 +1,643 @@
+<!-- dashboard.html -->
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - BPM Consultant Demo | Software Evolutivo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #64748b;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --info-color: #06b6d4;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+
+        .stats-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .stats-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .stats-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .quick-action-btn {
+            border-radius: 12px;
+            padding: 15px 20px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .quick-action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .recent-activity {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .activity-item {
+            border-left: 4px solid var(--primary-color);
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .activity-item:hover {
+            background: rgba(255, 255, 255, 0.9);
+            transform: translateX(5px);
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(37, 99, 235, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark" style="background: rgba(0, 0, 0, 0.1); backdrop-filter: blur(10px);">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-cogs me-2"></i>
+                BPM Consultant Demo
+                <small class="text-white-50 ms-2">by Software Evolutivo</small>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/process/dashboard">
+                            <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/process/create">
+                            <i class="fas fa-plus me-1"></i>Nueva Solicitud
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/tasks/inbox">
+                            <i class="fas fa-tasks me-1"></i>Mis Tareas
+                            <span class="badge bg-danger ms-1" id="pendingTasksCount">3</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/process/monitor">
+                            <i class="fas fa-chart-line me-1"></i>Monitor
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/reports/dashboard">
+                            <i class="fas fa-chart-bar me-1"></i>Reportes
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle me-1"></i>Demo User
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="/camunda"><i class="fas fa-cog me-2"></i>Camunda Admin</a></li>
+                            <li><a class="dropdown-item" href="/h2-console"><i class="fas fa-database me-2"></i>Base de Datos</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4 px-4">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="glass-card p-4 text-white">
+                    <h1 class="display-6 mb-2">
+                        <i class="fas fa-tachometer-alt me-3"></i>
+                        Dashboard de Gestión BPM
+                    </h1>
+                    <p class="lead mb-0">
+                        Sistema completo de gestión de procesos de negocio con Camunda
+                        <span class="badge bg-success ms-2 pulse">
+                            <i class="fas fa-circle me-1"></i>En línea
+                        </span>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="row mb-4">
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="stats-card p-4 h-100">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon bg-primary me-3">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <div>
+                            <h3 class="mb-1" th:text="${totalRequests}">127</h3>
+                            <p class="text-muted mb-0">Total Solicitudes</p>
+                            <small class="text-success">
+                                <i class="fas fa-arrow-up me-1"></i>+12% este mes
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="stats-card p-4 h-100">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon bg-warning me-3">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div>
+                            <h3 class="mb-1" th:text="${pendingRequests}">23</h3>
+                            <p class="text-muted mb-0">Pendientes</p>
+                            <small class="text-warning">
+                                <i class="fas fa-hourglass-half me-1"></i>Requieren atención
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="stats-card p-4 h-100">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon bg-success me-3">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div>
+                            <h3 class="mb-1" th:text="${approvedRequests}">89</h3>
+                            <p class="text-muted mb-0">Aprobadas</p>
+                            <small class="text-success">
+                                <i class="fas fa-thumbs-up me-1"></i>70% aprobación
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="stats-card p-4 h-100">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon bg-danger me-3">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+                        <div>
+                            <h3 class="mb-1" th:text="${rejectedRequests}">15</h3>
+                            <p class="text-muted mb-0">Rechazadas</p>
+                            <small class="text-danger">
+                                <i class="fas fa-arrow-down me-1"></i>-5% vs mes anterior
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts and Actions -->
+        <div class="row mb-4">
+            <!-- Process Status Chart -->
+            <div class="col-lg-8 mb-4">
+                <div class="chart-container">
+                    <h5 class="mb-3">
+                        <i class="fas fa-chart-pie me-2 text-primary"></i>
+                        Estado de Procesos
+                    </h5>
+                    <canvas id="processStatusChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="col-lg-4 mb-4">
+                <div class="chart-container">
+                    <h5 class="mb-3">
+                        <i class="fas fa-bolt me-2 text-primary"></i>
+                        Acciones Rápidas
+                    </h5>
+                    <div class="d-grid gap-3">
+                        <a href="/process/create" class="btn quick-action-btn btn-primary btn-lg">
+                            <i class="fas fa-plus me-2"></i>
+                            Nueva Solicitud
+                        </a>
+                        <a href="/tasks/inbox" class="btn quick-action-btn btn-warning btn-lg">
+                            <i class="fas fa-tasks me-2"></i>
+                            Ver Mis Tareas
+                            <span class="badge bg-light text-dark ms-2">3</span>
+                        </a>
+                        <a href="/process/monitor" class="btn quick-action-btn btn-info btn-lg">
+                            <i class="fas fa-chart-line me-2"></i>
+                            Monitor Procesos
+                        </a>
+                        <a href="/reports/dashboard" class="btn quick-action-btn btn-secondary btn-lg">
+                            <i class="fas fa-chart-bar me-2"></i>
+                            Ver Reportes
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity and Performance -->
+        <div class="row mb-4">
+            <!-- Recent Activity -->
+            <div class="col-lg-6 mb-4">
+                <div class="recent-activity p-4">
+                    <h5 class="mb-3">
+                        <i class="fas fa-history me-2 text-primary"></i>
+                        Actividad Reciente
+                        <span class="badge bg-primary ms-2">En tiempo real</span>
+                    </h5>
+                    <div id="recentActivity">
+                        <div class="activity-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>PR-2024-000125</strong> - Aprobada por <em>Juan Pérez</em>
+                                    <br><small class="text-muted">Compra de equipos de oficina - $2,450.00</small>
+                                </div>
+                                <small class="text-muted">Hace 5 min</small>
+                            </div>
+                        </div>
+                        
+                        <div class="activity-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>PR-2024-000124</strong> - Nueva solicitud creada
+                                    <br><small class="text-muted">Servicios de mantenimiento - $850.00</small>
+                                </div>
+                                <small class="text-muted">Hace 15 min</small>
+                            </div>
+                        </div>
+                        
+                        <div class="activity-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>PR-2024-000123</strong> - Recordatorio enviado
+                                    <br><small class="text-muted">Esperando aprobación gerencial</small>
+                                </div>
+                                <small class="text-muted">Hace 1 hora</small>
+                            </div>
+                        </div>
+                        
+                        <div class="activity-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>PR-2024-000122</strong> - Rechazada
+                                    <br><small class="text-muted">Falta documentación requerida</small>
+                                </div>
+                                <small class="text-muted">Hace 2 horas</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Performance Metrics -->
+            <div class="col-lg-6 mb-4">
+                <div class="chart-container">
+                    <h5 class="mb-3">
+                        <i class="fas fa-tachometer-alt me-2 text-primary"></i>
+                        Métricas de Rendimiento
+                    </h5>
+                    <canvas id="performanceChart" width="400" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Process Timeline -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="chart-container">
+                    <h5 class="mb-3">
+                        <i class="fas fa-chart-area me-2 text-primary"></i>
+                        Tendencia de Solicitudes (Últimos 30 días)
+                    </h5>
+                    <canvas id="timelineChart" width="400" height="150"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Status -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="glass-card p-4 text-white">
+                    <div class="row">
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="text-center">
+                                <i class="fas fa-server fa-2x mb-2 text-success"></i>
+                                <h6>Sistema BPM</h6>
+                                <span class="badge bg-success">Operativo</span>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="text-center">
+                                <i class="fas fa-database fa-2x mb-2 text-success"></i>
+                                <h6>Base de Datos</h6>
+                                <span class="badge bg-success">Conectada</span>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="text-center">
+                                <i class="fas fa-envelope fa-2x mb-2 text-success"></i>
+                                <h6>Servicio Email</h6>
+                                <span class="badge bg-success">Activo</span>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="text-center">
+                                <i class="fas fa-cogs fa-2x mb-2 text-info pulse"></i>
+                                <h6>Procesos Activos</h6>
+                                <span class="badge bg-info">23 ejecutándose</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-5 py-4" style="background: rgba(0, 0, 0, 0.1); backdrop-filter: blur(10px);">
+        <div class="container">
+            <div class="row text-white text-center">
+                <div class="col-12">
+                    <p class="mb-2">
+                        <strong>Camunda BPM Consultant Demo</strong> - Prueba técnica para Software Evolutivo
+                    </p>
+                    <p class="mb-0">
+                        <small>
+                            Desarrollado por Sebastian Rodriguez | 
+                            <i class="fas fa-code me-1"></i>Código: 
+                            <a href="https://github.com/SebaS00B/camunda-reto-software-evolutivo" class="text-white" target="_blank">
+                                GitHub Repository
+                            </a>
+                        </small>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    
+    <script>
+        $(document).ready(function() {
+            initializeCharts();
+            loadRealtimeData();
+            
+            // Actualizar datos cada 30 segundos
+            setInterval(loadRealtimeData, 30000);
+        });
+
+        function initializeCharts() {
+            // Process Status Chart (Donut)
+            const ctx1 = document.getElementById('processStatusChart').getContext('2d');
+            new Chart(ctx1, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Aprobadas', 'Pendientes', 'Rechazadas', 'En Proceso'],
+                    datasets: [{
+                        data: [70, 18, 12, 15],
+                        backgroundColor: [
+                            '#10b981',
+                            '#f59e0b', 
+                            '#ef4444',
+                            '#06b6d4'
+                        ],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Performance Chart (Bar)
+            const ctx2 = document.getElementById('performanceChart').getContext('2d');
+            new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: ['Tiempo Promedio', 'SLA Cumplido', 'Satisfacción'],
+                    datasets: [{
+                        label: 'Métricas (%)',
+                        data: [85, 92, 88],
+                        backgroundColor: [
+                            '#2563eb',
+                            '#10b981',
+                            '#f59e0b'
+                        ],
+                        borderRadius: 8,
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+
+            // Timeline Chart (Line)
+            const ctx3 = document.getElementById('timelineChart').getContext('2d');
+            new Chart(ctx3, {
+                type: 'line',
+                data: {
+                    labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'],
+                    datasets: [{
+                        label: 'Solicitudes Creadas',
+                        data: [32, 45, 38, 52],
+                        borderColor: '#2563eb',
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }, {
+                        label: 'Solicitudes Procesadas',
+                        data: [28, 42, 35, 48],
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        }
+
+        function loadRealtimeData() {
+            // Simular carga de datos en tiempo real
+            console.log('🔄 Actualizando datos en tiempo real...');
+            
+            // En una implementación real, aquí harías llamadas AJAX
+            // $.get('/api/v1/dashboard/stats').done(function(data) { ... });
+            
+            // Simular nuevas actividades
+            if (Math.random() > 0.7) {
+                addNewActivity();
+            }
+        }
+
+        function addNewActivity() {
+            const activities = [
+                {
+                    code: 'PR-2024-' + String(Math.floor(Math.random() * 1000)).padStart(6, '0'),
+                    action: 'Nueva solicitud creada',
+                    description: 'Equipos de tecnología -  + (Math.random() * 10000).toFixed(2),
+                    time: 'Hace unos segundos'
+                },
+                {
+                    code: 'PR-2024-' + String(Math.floor(Math.random() * 1000)).padStart(6, '0'),
+                    action: 'Aprobada automáticamente',
+                    description: 'Suministros de oficina -  + (Math.random() * 500).toFixed(2),
+                    time: 'Hace unos segundos'
+                }
+            ];
+            
+            const activity = activities[Math.floor(Math.random() * activities.length)];
+            
+            const activityHtml = `
+                <div class="activity-item" style="animation: slideIn 0.5s ease;">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>${activity.code}</strong> - ${activity.action}
+                            <br><small class="text-muted">${activity.description}</small>
+                        </div>
+                        <small class="text-muted">${activity.time}</small>
+                    </div>
+                </div>
+            `;
+            
+            $('#recentActivity').prepend(activityHtml);
+            
+            // Mantener solo las últimas 5 actividades
+            $('#recentActivity .activity-item').slice(5).remove();
+        }
+
+        // Animación de entrada para nuevas actividades
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from {
+                    transform: translateX(-100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

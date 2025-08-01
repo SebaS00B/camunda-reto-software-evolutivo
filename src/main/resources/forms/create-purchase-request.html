@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nueva Solicitud de Compra - BPM Consultant Demo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link th:href="@{/css/custom-style.css}" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/process/dashboard">
+                <i class="fas fa-cogs me-2"></i>BPM Consultant Demo
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/process/dashboard">
+                            <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/process/create">
+                            <i class="fas fa-plus me-1"></i>Nueva Solicitud
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/tasks/inbox">
+                            <i class="fas fa-tasks me-1"></i>Mis Tareas
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">
+                            <i class="fas fa-shopping-cart me-2"></i>
+                            Nueva Solicitud de Compra
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <form id="purchaseRequestForm" novalidate>
+                            <!-- Información General -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h5 class="text-primary border-bottom pb-2">
+                                        <i class="fas fa-info-circle me-2"></i>Información General
+                                    </h5>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-8">
+                                    <label for="title" class="form-label">
+                                        <i class="fas fa-heading me-1"></i>Título de la Solicitud *
+                                    </label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="title" 
+                                           name="title" 
+                                           required 
+                                           minlength="5" 
+                                           maxlength="200"
+                                           placeholder="Ej: Compra de equipos de oficina">
+                                    <div class="invalid-feedback">
+                                        El título debe tener entre 5 y 200 caracteres
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="priority" class="form-label">
+                                        <i class="fas fa-exclamation-circle me-1"></i>Prioridad *
+                                    </label>
+                                    <select class="form-select" id="priority" name="priority" required>
+                                        <option value="">Seleccionar...</option>
+                                        <option value="LOW">🟢 Baja</option>
+                                        <option value="MEDIUM" selected>🟡 Media</option>
+                                        <option value="HIGH">🟠 Alta</option>
+                                        <option value="URGENT">🔴 Urgente</option>
+                                    </select>
+                                    <div class="invalid-feedback">
+                                        Seleccione una prioridad
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="description" class="form-label">
+                                    <i class="fas fa-align-left me-1"></i>Descripción Detallada *
+                                </label>
+                                <textarea class="form-control" 
+                                          id="description" 
+                                          name="description" 
+                                          rows="4" 
+                                          required 
+                                          minlength="10" 
+                                          maxlength="1000"
+                                          placeholder="Describe detalladamente los productos o servicios a adquirir..."></textarea>
+                                <div class="invalid-feedback">
+                                    La descripción debe tener entre 10 y 1000 caracteres
+                                </div>
+                                <div class="form-text">
+                                    <span id="descriptionCount">0</span> / 1000 caracteres
+                                </div>
+                            </div>
+
+                            <!-- Información Financiera -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h5 class="text-primary border-bottom pb-2">
+                                        <i class="fas fa-dollar-sign me-2"></i>Información Financiera
+                                    </h5>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="totalAmount" class="form-label">
+                                        <i class="fas fa-money-bill-wave me-1"></i>Monto Total *
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" 
+                                               class="form-control" 
+                                               id="totalAmount" 
+                                               name="totalAmount"
+                                               required 
+                                               min="0.01" 
+                                               max="999999.99" 
+                                               step="0.01"
+                                               placeholder="0.00">
+                                        <div class="invalid-feedback">
+                                            El monto debe estar entre $0.01 y $999,999.99
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="currency" class="form-label">
+                                        <i class="fas fa-coins me-1"></i>Moneda *
+                                    </label>
+                                    <select class="form-select" id="currency" name="currency" required>
+                                        <option value="">Seleccionar moneda...</option>
+                                        <option th:each="currency : ${currencies}" 
+                                                th:value="${currency.code}" 
+                                                th:text="${currency.symbol + ' - ' + currency.name}"
+                                                th:selected="${currency.code == 'USD'}"></option>
+                                    </select>
+                                    <div class="invalid-feedback">
+                                        Seleccione una moneda
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Información del Proveedor -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h5 class="text-primary border-bottom pb-2">
+                                        <i class="fas fa-truck me-2"></i>Información del Proveedor
+                                    </h5>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="supplier" class="form-label">
+                                        <i class="fas fa-building me-1"></i>Proveedor * (Datos externos)
+                                    </label>
+                                    <select class="form-select" id="supplier" name="supplier" required>
+                                        <option value="">Cargando proveedores...</option>
+                                        <option th:each="supplier : ${suppliers}" 
+                                                th:value="${supplier.name}" 
+                                                th:text="${supplier.name + ' (' + supplier.email + ')'}"></option>
+                                    </select>
+                                    <div class="invalid-feedback">
+                                        Seleccione un proveedor
+                                    </div>
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Datos obtenidos desde servicio REST externo
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="category" class="form-label">
+                                        <i class="fas fa-tags me-1"></i>Categoría * (Datos externos)
+                                    </label>
+                                    <select class="form-select" id="category" name="category" required>
+                                        <option value="">Cargando categorías...</option>
+                                        <option th:each="category : ${categories}" 
+                                                th:value="${category.name}" 
+                                                th:text="${category.name}"></option>
+                                    </select>
+                                    <div class="invalid-feedback">
+                                        Seleccione una categoría
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Fechas y Información Adicional -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h5 class="text-primary border-bottom pb-2">
+                                        <i class="fas fa-calendar me-2"></i>Fechas e Información Adicional
+                                    </h5>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label for="requiredDate" class="form-label">
+                                        <i class="fas fa-calendar-check me-1"></i>Fecha Requerida *
+                                    </label>
+                                    <input type="date" 
+                                           class="form-control" 
+                                           id="requiredDate" 
+                                           name="requiredDate" 
+                                           required>
+                                    <div class="invalid-feedback">
+                                        La fecha requerida debe ser futura
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="requestor" class="form-label">
+                                        <i class="fas fa-user me-1"></i>Solicitante *
+                                    </label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="requestor" 
+                                           name="requestor" 
+                                           required 
+                                           value="Demo User"
+                                           readonly>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="requestorEmail" class="form-label">
+                                        <i class="fas fa-envelope me-1"></i>Email del Solicitante *
+                                    </label>
+                                    <input type="email" 
+                                           class="form-control" 
+                                           id="requestorEmail" 
+                                           name="requestorEmail" 
+                                           required 
+                                           value="demo@empresa.com"
+                                           readonly>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="department" class="form-label">
+                                    <i class="fas fa-building me-1"></i>Departamento
+                                </label>
+                                <select class="form-select" id="department" name="department">
+                                    <option value="">Seleccionar departamento...</option>
+                                    <option value="IT">Tecnología</option>
+                                    <option value="HR">Recursos Humanos</option>
+                                    <option value="FINANCE">Finanzas</option>
+                                    <option value="OPERATIONS">Operaciones</option>
+                                    <option value="MARKETING">Marketing</option>
+                                </select>
+                            </div>
+
+                            <!-- Botones de Acción -->
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <hr>
+                                    <div class="d-flex justify-content-between">
+                                        <button type="button" class="btn btn-secondary" onclick="history.back()">
+                                            <i class="fas fa-arrow-left me-2"></i>Cancelar
+                                        </button>
+                                        <div>
+                                            <button type="button" class="btn btn-outline-primary me-2" id="validateBtn">
+                                                <i class="fas fa-check-circle me-2"></i>Validar Formulario
+                                            </button>
+                                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                                <i class="fas fa-paper-plane me-2"></i>Iniciar Proceso
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmación -->
+    <div class="modal fade" id="confirmModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-check-circle me-2"></i>Proceso Iniciado
+                    </h5>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-success">
+                        <h6><strong>¡Solicitud creada exitosamente!</strong></h6>
+                        <p class="mb-2">
+                            <strong>Código:</strong> <span id="modalRequestCode"></span><br>
+                            <strong>Proceso ID:</strong> <span id="modalProcessId"></span>
+                        </p>
+                        <p class="mb-0">
+                            La solicitud ha sido enviada para su revisión y aprobación.
+                        </p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="window.location.href='/process/dashboard'">
+                        <i class="fas fa-tachometer-alt me-2"></i>Ir al Dashboard
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="window.location.href='/tasks/inbox'">
+                        <i class="fas fa-tasks me-2"></i>Ver Mis Tareas
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    
+    <script>
+        $(document).ready(function() {
+            // Configurar fecha mínima como mañana
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const minDate = tomorrow.toISOString().split('T')[0];
+            $('#requiredDate').attr('min', minDate);
+
+            // Contador de caracteres para descripción
+            $('#description').on('input', function() {
+                const count = $(this).val().length;
+                $('#descriptionCount').text(count);
+                
+                if (count > 1000) {
+                    $(this).addClass('is-invalid');
+                } else {
+                    $(this).removeClass('is-invalid');
+                }
+            });
+
+            // Validación en tiempo real para monto
+            $('#totalAmount').on('input', function() {
+                const amount = parseFloat($(this).val());
+                const $feedback = $(this).siblings('.invalid-feedback');
+                
+                if (amount > 100000) {
+                    $(this).addClass('is-invalid');
+                    $feedback.text('⚠️ Montos superiores a $100,000 requieren aprobación especial del CEO');
+                } else if (amount > 20000) {
+                    $(this).removeClass('is-invalid').addClass('is-valid');
+                    $feedback.text('ℹ️ Este monto requiere aprobación gerencial');
+                } else if (amount > 5000) {
+                    $(this).removeClass('is-invalid').addClass('is-valid');
+                    $feedback.text('ℹ️ Este monto requiere aprobación de supervisor');
+                } else if (amount <= 500 && amount > 0) {
+                    $(this).removeClass('is-invalid').addClass('is-valid');
+                    $feedback.text('✅ Este monto puede ser aprobado automáticamente');
+                } else {
+                    $(this).removeClass('is-invalid is-valid');
+                }
+            });
+
+            // Botón de validación
+            $('#validateBtn').click(function() {
+                validateForm(false);
+            });
+
+            // Envío del formulario
+            $('#purchaseRequestForm').submit(function(e) {
+                e.preventDefault();
+                
+                if (validateForm(true)) {
+                    submitForm();
+                }
+            });
+
+            // Cargar datos externos si no están disponibles
+            loadExternalData();
+        });
+
+        function validateForm(showErrors) {
+            let isValid = true;
+            const form = document.getElementById('purchaseRequestForm');
+            
+            // Limpiar validaciones previas
+            $(form).find('.is-invalid').removeClass('is-invalid');
+            $(form).find('.is-valid').removeClass('is-valid');
+
+            // Validar cada campo requerido
+            $(form).find('[required]').each(function() {
+                const $field = $(this);
+                const value = $field.val().trim();
+                
+                if (!value) {
+                    if (showErrors) $field.addClass('is-invalid');
+                    isValid = false;
+                } else {
+                    $field.addClass('is-valid');
+                }
+            });
+
+            // Validaciones específicas
+            const amount = parseFloat($('#totalAmount').val());
+            if (amount <= 0 || amount > 999999.99) {
+                if (showErrors) $('#totalAmount').addClass('is-invalid');
+                isValid = false;
+            }
+
+            const requiredDate = new Date($('#requiredDate').val());
+            const today = new Date();
+            if (requiredDate <= today) {
+                if (showErrors) $('#requiredDate').addClass('is-invalid');
+                isValid = false;
+            }
+
+            // Mostrar resultado de validación
+            if (!showErrors) {
+                if (isValid) {
+                    showAlert('success', '✅ Formulario válido', 'Todos los campos han sido validados correctamente.');
+                } else {
+                    showAlert('warning', '⚠️ Formulario incompleto', 'Por favor, complete todos los campos requeridos.');
+                }
+            }
+
+            return isValid;
+        }
+
+        function submitForm() {
+            const $submitBtn = $('#submitBtn');
+            $submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Procesando...');
+
+            const formData = {
+                title: $('#title').val(),
+                description: $('#description').val(),
+                totalAmount: parseFloat($('#totalAmount').val()),
+                currency: $('#currency').val(),
+                supplier: $('#supplier').val(),
+                category: $('#category').val(),
+                requiredDate: $('#requiredDate').val() + 'T00:00:00',
+                priority: $('#priority').val(),
+                requestor: $('#requestor').val(),
+                requestorEmail: $('#requestorEmail').val(),
+                department: $('#department').val()
+            };
+
+            $.ajax({
+                url: '/process/start',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                success: function(response) {
+                    if (response.success) {
+                        $('#modalRequestCode').text(response.requestCode);
+                        $('#modalProcessId').text(response.processInstanceId);
+                        $('#confirmModal').modal('show');
+                    } else {
+                        showAlert('danger', '❌ Error', response.message);
+                    }
+                },
+                error: function(xhr) {
+                    const error = xhr.responseJSON || {message: 'Error interno del servidor'};
+                    showAlert('danger', '❌ Error', error.message);
+                },
+                complete: function() {
+                    $submitBtn.prop('disabled', false).html('<i class="fas fa-paper-plane me-2"></i>Iniciar Proceso');
+                }
+            });
+        }
+
+        function loadExternalData() {
+            // Cargar proveedores si el select está vacío
+            if ($('#supplier option').length <= 1) {
+                $.get('/api/v1/suppliers')
+                    .done(function(suppliers) {
+                        const $select = $('#supplier');
+                        $select.empty().append('<option value="">Seleccionar proveedor...</option>');
+                        suppliers.forEach(function(supplier) {
+                            $select.append(`<option value="${supplier.name}">${supplier.name} (${supplier.email})</option>`);
+                        });
+                    })
+                    .fail(function() {
+                        $('#supplier').html('<option value="">Error cargando proveedores</option>');
+                    });
+            }
+
+            // Cargar categorías si el select está vacío
+            if ($('#category option').length <= 1) {
+                $.get('/api/v1/categories')
+                    .done(function(categories) {
+                        const $select = $('#category');
+                        $select.empty().append('<option value="">Seleccionar categoría...</option>');
+                        categories.forEach(function(category) {
+                            $select.append(`<option value="${category.name}">${category.name}</option>`);
+                        });
+                    })
+                    .fail(function() {
+                        $('#category').html('<option value="">Error cargando categorías</option>');
+                    });
+            }
+        }
+
+        function showAlert(type, title, message) {
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    <strong>${title}</strong> ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            // Insertar alerta al inicio del formulario
+            $('#purchaseRequestForm').prepend(alertHtml);
+            
+            // Auto-remover después de 5 segundos
+            setTimeout(function() {
+                $('.alert').fadeOut();
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

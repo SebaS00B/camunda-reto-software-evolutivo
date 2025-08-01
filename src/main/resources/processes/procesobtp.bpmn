@@ -1,110 +1,357 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_0t4cu85" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.37.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.23.0">
-  <bpmn:process id="Process_119rg68" isExecutable="true">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_0t4cu85" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.37.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.23.0">
+  <bpmn:process id="purchase-request-process" name="Purchase Request Process" isExecutable="true" camunda:historyTimeToLive="30">
     <bpmn:extensionElements />
-    <bpmn:startEvent id="Event_11dd39z" name="INICIAR &#10;PROCESO">
-      <bpmn:outgoing>Flow_0fzxda0</bpmn:outgoing>
+    <bpmn:startEvent id="StartEvent_CreateRequest" name="CREAR SOLICITUD DE COMPRA" camunda:formKey="embedded:app:forms/create-purchase-request.html">
+      <bpmn:extensionElements />
+      <bpmn:outgoing>Flow_07vvcc5</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:exclusiveGateway id="Gateway_08zihpm" name="DESICION DE&#10;APROBACION">
-      <bpmn:incoming>Flow_1ye6dzd</bpmn:incoming>
-      <bpmn:outgoing>Flow_17yydut</bpmn:outgoing>
-      <bpmn:outgoing>Flow_1lpuiuq</bpmn:outgoing>
-    </bpmn:exclusiveGateway>
-    <bpmn:userTask id="Activity_0qckupk" name="COMPLETAR&#10;FORMULARIO" camunda:formKey="embedded:app:forms/form.html">
+    <bpmn:endEvent id="EndEvent_ProcessComplete" name="PROCESO&#10;COMPLETADO">
+      <bpmn:incoming>Flow_15qn8pt</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="ServiceTask_ValidateRequest" name="VALIDAR&#10;SOLICITUD" camunda:delegateExpression="${validatePurchaseRequestDelegate}">
+      <bpmn:incoming>Flow_07vvcc5</bpmn:incoming>
+      <bpmn:outgoing>Flow_0nlb4pn</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_07vvcc5" sourceRef="StartEvent_CreateRequest" targetRef="ServiceTask_ValidateRequest" />
+    <bpmn:businessRuleTask id="BusinessRule_DetermineRoute" name="DETERMINAR &#10;RUTA  DE&#10;APROBACION" camunda:resultVariable="approvalRoute" camunda:decisionRef="purchase-approval-rules" camunda:mapDecisionResult="singleEntry">
       <bpmn:extensionElements>
         <camunda:properties>
-          <camunda:property name="" />
+          <camunda:property name="Decision Ref" value="purchase-approval-rules" />
+          <camunda:property name="Result Variable" value="approvalRoute" />
+          <camunda:property name="Map Decision Result" value="singleEntry" />
         </camunda:properties>
       </bpmn:extensionElements>
-      <bpmn:incoming>Flow_0fzxda0</bpmn:incoming>
-      <bpmn:outgoing>Flow_1ye6dzd</bpmn:outgoing>
+      <bpmn:incoming>Flow_0nlb4pn</bpmn:incoming>
+      <bpmn:outgoing>Flow_1ii98yp</bpmn:outgoing>
+    </bpmn:businessRuleTask>
+    <bpmn:sequenceFlow id="Flow_0nlb4pn" sourceRef="ServiceTask_ValidateRequest" targetRef="BusinessRule_DetermineRoute" />
+    <bpmn:exclusiveGateway id="Gateway_ApprovalRoute" name="RUTA DE &#10;APROBACION">
+      <bpmn:extensionElements />
+      <bpmn:incoming>Flow_1ii98yp</bpmn:incoming>
+      <bpmn:outgoing>Flow_082smf1</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0vecvle</bpmn:outgoing>
+      <bpmn:outgoing>Flow_09vznu0</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1q0evgq</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_1ii98yp" sourceRef="BusinessRule_DetermineRoute" targetRef="Gateway_ApprovalRoute" />
+    <bpmn:serviceTask id="ServiceTask_AutoApproval" name="APROBACION&#10;AUTOMATICA" camunda:delegateExpression="${autoApprovalDelegate}">
+      <bpmn:extensionElements />
+      <bpmn:incoming>Flow_082smf1</bpmn:incoming>
+      <bpmn:outgoing>Flow_17r2tso</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_082smf1" name="Auto Approval" sourceRef="Gateway_ApprovalRoute" targetRef="ServiceTask_AutoApproval">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${approvalRoute == 'AUTO'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:userTask id="UserTask_SupervisorApproval" name="APROBACION&#10;SUPERVISOR" camunda:formKey="embedded:app:forms/supervisor-approval.html" camunda:assignee="" camunda:candidateGroups="supervisor" camunda:dueDate="${dateTime().plusDays(2).toDate()}" camunda:priority="">
+      <bpmn:incoming>Flow_0vecvle</bpmn:incoming>
+      <bpmn:incoming>Flow_11rzfrn</bpmn:incoming>
+      <bpmn:outgoing>Flow_0hczqty</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:sequenceFlow id="Flow_0fzxda0" sourceRef="Event_11dd39z" targetRef="Activity_0qckupk" />
-    <bpmn:sequenceFlow id="Flow_1ye6dzd" sourceRef="Activity_0qckupk" targetRef="Gateway_08zihpm" />
-    <bpmn:serviceTask id="Activity_01klwmf" name="API APROBACION">
-      <bpmn:incoming>Flow_17yydut</bpmn:incoming>
-      <bpmn:outgoing>Flow_1xftfym</bpmn:outgoing>
+    <bpmn:userTask id="UserTask_ManagerApproval" name="APROBACION&#10;GERENTE" camunda:formKey="embedded:app:forms/manager-approval.html" camunda:assignee="" camunda:candidateUsers="" camunda:candidateGroups="manager" camunda:dueDate="${dateTime().plusDays(3).toDate()}" camunda:followUpDate="" camunda:priority="">
+      <bpmn:incoming>Flow_09vznu0</bpmn:incoming>
+      <bpmn:incoming>Flow_0wn8b33</bpmn:incoming>
+      <bpmn:outgoing>Flow_16onkyh</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="UserTask_CeoApproval" name="APROBACION CEO" camunda:formKey="embedded:app:forms/ceo-approval.html" camunda:candidateGroups="ceo" camunda:dueDate="${dateTime().plusDays(5).toDate()}" camunda:priority="">
+      <bpmn:incoming>Flow_1q0evgq</bpmn:incoming>
+      <bpmn:incoming>Flow_1wjfejg</bpmn:incoming>
+      <bpmn:outgoing>Flow_0u1grxx</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:boundaryEvent id="BoundaryEvent_SupervisorTimer" name="Timer SUPERVISOR" cancelActivity="false" attachedToRef="UserTask_SupervisorApproval">
+      <bpmn:outgoing>Flow_0o11u9o</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_041l8pp">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P1D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:serviceTask id="ServiceTask_SupervisorReminder" name="RECORDATORIO &#10;SUPERVISOR" camunda:delegateExpression="${sendReminderDelegate}">
+      <bpmn:incoming>Flow_0o11u9o</bpmn:incoming>
+      <bpmn:outgoing>Flow_11rzfrn</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:sequenceFlow id="Flow_17yydut" name="SI APROBADO" sourceRef="Gateway_08zihpm" targetRef="Activity_01klwmf" />
-    <bpmn:serviceTask id="Activity_1kviyo0" name="API&#10;RECHAZO">
-      <bpmn:incoming>Flow_1lpuiuq</bpmn:incoming>
-      <bpmn:outgoing>Flow_14a8rv8</bpmn:outgoing>
+    <bpmn:serviceTask id="ServiceTask_ManagerReminder" name="RECORDATORIO &#10;GERENTE" camunda:delegateExpression="${sendReminderDelegate}">
+      <bpmn:incoming>Flow_0ts0als</bpmn:incoming>
+      <bpmn:outgoing>Flow_0wn8b33</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:sequenceFlow id="Flow_1lpuiuq" name="NO APROBADO" sourceRef="Gateway_08zihpm" targetRef="Activity_1kviyo0" />
-    <bpmn:endEvent id="Event_1l5h5a3" name="FINALIZAR&#10;PROCESO">
-      <bpmn:incoming>Flow_1xftfym</bpmn:incoming>
-      <bpmn:incoming>Flow_14a8rv8</bpmn:incoming>
-    </bpmn:endEvent>
-    <bpmn:sequenceFlow id="Flow_1xftfym" sourceRef="Activity_01klwmf" targetRef="Event_1l5h5a3" />
-    <bpmn:sequenceFlow id="Flow_14a8rv8" sourceRef="Activity_1kviyo0" targetRef="Event_1l5h5a3" />
+    <bpmn:boundaryEvent id="BoundaryEvent_ManagerTimer" name="Timer GERENTE" cancelActivity="false" attachedToRef="UserTask_ManagerApproval">
+      <bpmn:outgoing>Flow_0ts0als</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_1562hod">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P2D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:serviceTask id="ServiceTask_CeoReminder" name="RECORDATORIO &#10;CEO" camunda:delegateExpression="${sendReminderDelegate}">
+      <bpmn:incoming>Flow_01bh81r</bpmn:incoming>
+      <bpmn:outgoing>Flow_1wjfejg</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:boundaryEvent id="BoundaryEvent_CeoTimer" name="CeoTimer" cancelActivity="false" attachedToRef="UserTask_CeoApproval">
+      <bpmn:outgoing>Flow_01bh81r</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_05v7j0b">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P3D</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:exclusiveGateway id="Gateway_ApprovalDecision" name="APROBADO?">
+      <bpmn:incoming>Flow_0u1grxx</bpmn:incoming>
+      <bpmn:incoming>Flow_0hczqty</bpmn:incoming>
+      <bpmn:incoming>Flow_17r2tso</bpmn:incoming>
+      <bpmn:incoming>Flow_16onkyh</bpmn:incoming>
+      <bpmn:outgoing>Flow_0kocl9c</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1szqx3i</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="ServiceTask_ProcessApproval" name="PROCESAR &#10;APROBACION" camunda:delegateExpression="${processApprovalDelegate}">
+      <bpmn:incoming>Flow_0kocl9c</bpmn:incoming>
+      <bpmn:outgoing>Flow_0v792he</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_0kocl9c" name="Aprobado" sourceRef="Gateway_ApprovalDecision" targetRef="ServiceTask_ProcessApproval">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${approved == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:serviceTask id="ServiceTask_ProcessRejection" name="PROCESAR&#10;RECHAZO" camunda:delegateExpression="${processRejectionDelegate}">
+      <bpmn:incoming>Flow_1szqx3i</bpmn:incoming>
+      <bpmn:outgoing>Flow_0ftkhse</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_1szqx3i" name="Rechazado" sourceRef="Gateway_ApprovalDecision" targetRef="ServiceTask_ProcessRejection">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${approved == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:serviceTask id="ServiceTask_FinalNotification" name="ENVIAR&#10;NOTIFICACION&#10;FINAL" camunda:delegateExpression="${sendFinalNotificationDelegate}">
+      <bpmn:incoming>Flow_0ftkhse</bpmn:incoming>
+      <bpmn:incoming>Flow_0v792he</bpmn:incoming>
+      <bpmn:outgoing>Flow_15qn8pt</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_0ftkhse" sourceRef="ServiceTask_ProcessRejection" targetRef="ServiceTask_FinalNotification" />
+    <bpmn:sequenceFlow id="Flow_0v792he" sourceRef="ServiceTask_ProcessApproval" targetRef="ServiceTask_FinalNotification" />
+    <bpmn:sequenceFlow id="Flow_15qn8pt" sourceRef="ServiceTask_FinalNotification" targetRef="EndEvent_ProcessComplete" />
+    <bpmn:sequenceFlow id="Flow_0vecvle" name="Supervisor Required" sourceRef="Gateway_ApprovalRoute" targetRef="UserTask_SupervisorApproval">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${approvalRoute == 'SUPERVISOR'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_09vznu0" name="Manager Required" sourceRef="Gateway_ApprovalRoute" targetRef="UserTask_ManagerApproval">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${approvalRoute == 'MANAGER'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_1q0evgq" name="CEO Required" sourceRef="Gateway_ApprovalRoute" targetRef="UserTask_CeoApproval">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${approvalRoute == 'CEO'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_0o11u9o" sourceRef="BoundaryEvent_SupervisorTimer" targetRef="ServiceTask_SupervisorReminder" />
+    <bpmn:sequenceFlow id="Flow_01bh81r" sourceRef="BoundaryEvent_CeoTimer" targetRef="ServiceTask_CeoReminder" />
+    <bpmn:sequenceFlow id="Flow_11rzfrn" sourceRef="ServiceTask_SupervisorReminder" targetRef="UserTask_SupervisorApproval" />
+    <bpmn:sequenceFlow id="Flow_0wn8b33" sourceRef="ServiceTask_ManagerReminder" targetRef="UserTask_ManagerApproval" />
+    <bpmn:sequenceFlow id="Flow_1wjfejg" sourceRef="ServiceTask_CeoReminder" targetRef="UserTask_CeoApproval" />
+    <bpmn:sequenceFlow id="Flow_0u1grxx" sourceRef="UserTask_CeoApproval" targetRef="Gateway_ApprovalDecision" />
+    <bpmn:sequenceFlow id="Flow_0hczqty" sourceRef="UserTask_SupervisorApproval" targetRef="Gateway_ApprovalDecision" />
+    <bpmn:sequenceFlow id="Flow_17r2tso" sourceRef="ServiceTask_AutoApproval" targetRef="Gateway_ApprovalDecision" />
+    <bpmn:sequenceFlow id="Flow_0ts0als" sourceRef="BoundaryEvent_ManagerTimer" targetRef="ServiceTask_ManagerReminder" />
+    <bpmn:sequenceFlow id="Flow_16onkyh" sourceRef="UserTask_ManagerApproval" targetRef="Gateway_ApprovalDecision" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
-    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_119rg68">
-      <bpmndi:BPMNShape id="Event_11dd39z_di" bpmnElement="Event_11dd39z">
-        <dc:Bounds x="202" y="152" width="36" height="36" />
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="purchase-request-process">
+      <bpmndi:BPMNShape id="Event_1l5h5a3_di" bpmnElement="EndEvent_ProcessComplete">
+        <dc:Bounds x="1222" y="492" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="196" y="195" width="49" height="27" />
+          <dc:Bounds x="1206" y="535" width="69" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Gateway_08zihpm_di" bpmnElement="Gateway_08zihpm" isMarkerVisible="true">
-        <dc:Bounds x="445" y="145" width="50" height="50" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="505" y="156.5" width="68" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_0qckupk_di" bpmnElement="Activity_0qckupk">
-        <dc:Bounds x="290" y="130" width="100" height="80" />
+      <bpmndi:BPMNShape id="Activity_10ilab6_di" bpmnElement="BusinessRule_DetermineRoute">
+        <dc:Bounds x="200" y="290" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1kviyo0_di" bpmnElement="Activity_1kviyo0">
-        <dc:Bounds x="620" y="240" width="100" height="80" />
+      <bpmndi:BPMNShape id="Gateway_0ier8j7_di" bpmnElement="Gateway_ApprovalRoute" isMarkerVisible="true">
+        <dc:Bounds x="325" y="375" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="247" y="386" width="68" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_14a795s_di" bpmnElement="ServiceTask_AutoApproval">
+        <dc:Bounds x="460" y="190" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_01klwmf_di" bpmnElement="Activity_01klwmf">
-        <dc:Bounds x="620" y="60" width="100" height="80" />
+      <bpmndi:BPMNShape id="Activity_0eu6dob_di" bpmnElement="UserTask_SupervisorApproval">
+        <dc:Bounds x="460" y="310" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_1l5h5a3_di" bpmnElement="Event_1l5h5a3">
-        <dc:Bounds x="852" y="172" width="36" height="36" />
+      <bpmndi:BPMNShape id="Activity_1h392qf_di" bpmnElement="UserTask_ManagerApproval">
+        <dc:Bounds x="460" y="420" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1mw17ww_di" bpmnElement="UserTask_CeoApproval">
+        <dc:Bounds x="460" y="540" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0igm1i3_di" bpmnElement="ServiceTask_SupervisorReminder">
+        <dc:Bounds x="670" y="300" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0x881m0" bpmnElement="ServiceTask_ManagerReminder">
+        <dc:Bounds x="670" y="420" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1opt3ci" bpmnElement="ServiceTask_CeoReminder">
+        <dc:Bounds x="670" y="540" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0phfpu9_di" bpmnElement="Gateway_ApprovalDecision" isMarkerVisible="true">
+        <dc:Bounds x="855" y="475" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="844" y="215" width="53" height="27" />
+          <dc:Bounds x="915" y="493" width="65" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="Flow_0fzxda0_di" bpmnElement="Flow_0fzxda0">
-        <di:waypoint x="238" y="170" />
-        <di:waypoint x="290" y="170" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1ye6dzd_di" bpmnElement="Flow_1ye6dzd">
-        <di:waypoint x="390" y="170" />
-        <di:waypoint x="445" y="170" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_17yydut_di" bpmnElement="Flow_17yydut">
-        <di:waypoint x="470" y="145" />
-        <di:waypoint x="470" y="100" />
-        <di:waypoint x="620" y="100" />
+      <bpmndi:BPMNShape id="Activity_1ug8e0t_di" bpmnElement="ServiceTask_ProcessApproval">
+        <dc:Bounds x="960" y="380" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0i10loo_di" bpmnElement="ServiceTask_ProcessRejection">
+        <dc:Bounds x="960" y="550" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1jhy9cy_di" bpmnElement="ServiceTask_FinalNotification">
+        <dc:Bounds x="1080" y="470" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_06smmxr_di" bpmnElement="ServiceTask_ValidateRequest">
+        <dc:Bounds x="260" y="140" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_11dd39z_di" bpmnElement="StartEvent_CreateRequest">
+        <dc:Bounds x="152" y="132" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="450" y="119" width="70" height="14" />
+          <dc:Bounds x="136" y="82" width="68" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_00cu1qk" bpmnElement="BoundaryEvent_CeoTimer">
+        <dc:Bounds x="542" y="562" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="538" y="605" width="45" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0qf9wx7" bpmnElement="BoundaryEvent_ManagerTimer">
+        <dc:Bounds x="542" y="452" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="582" y="473" width="75" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0kw5d6d_di" bpmnElement="BoundaryEvent_SupervisorTimer">
+        <dc:Bounds x="542" y="332" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="572" y="356" width="65" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_07vvcc5_di" bpmnElement="Flow_07vvcc5">
+        <di:waypoint x="188" y="150" />
+        <di:waypoint x="260" y="150" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0nlb4pn_di" bpmnElement="Flow_0nlb4pn">
+        <di:waypoint x="260" y="180" />
+        <di:waypoint x="160" y="180" />
+        <di:waypoint x="160" y="330" />
+        <di:waypoint x="200" y="330" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1ii98yp_di" bpmnElement="Flow_1ii98yp">
+        <di:waypoint x="300" y="330" />
+        <di:waypoint x="350" y="330" />
+        <di:waypoint x="350" y="375" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_082smf1_di" bpmnElement="Flow_082smf1">
+        <di:waypoint x="350" y="375" />
+        <di:waypoint x="350" y="230" />
+        <di:waypoint x="460" y="230" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="331" y="306" width="69" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1lpuiuq_di" bpmnElement="Flow_1lpuiuq">
-        <di:waypoint x="470" y="195" />
-        <di:waypoint x="470" y="280" />
-        <di:waypoint x="620" y="280" />
+      <bpmndi:BPMNEdge id="Flow_0kocl9c_di" bpmnElement="Flow_0kocl9c">
+        <di:waypoint x="880" y="475" />
+        <di:waypoint x="880" y="420" />
+        <di:waypoint x="960" y="420" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="447" y="235" width="76" height="14" />
+          <dc:Bounds x="865" y="438" width="48" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1xftfym_di" bpmnElement="Flow_1xftfym">
-        <di:waypoint x="720" y="100" />
-        <di:waypoint x="776" y="100" />
-        <di:waypoint x="776" y="190" />
-        <di:waypoint x="852" y="190" />
+      <bpmndi:BPMNEdge id="Flow_1szqx3i_di" bpmnElement="Flow_1szqx3i">
+        <di:waypoint x="880" y="525" />
+        <di:waypoint x="880" y="590" />
+        <di:waypoint x="960" y="590" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="868" y="556" width="55" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_14a8rv8_di" bpmnElement="Flow_14a8rv8">
-        <di:waypoint x="720" y="280" />
-        <di:waypoint x="776" y="280" />
-        <di:waypoint x="776" y="190" />
-        <di:waypoint x="852" y="190" />
+      <bpmndi:BPMNEdge id="Flow_0ftkhse_di" bpmnElement="Flow_0ftkhse">
+        <di:waypoint x="1060" y="590" />
+        <di:waypoint x="1130" y="590" />
+        <di:waypoint x="1130" y="550" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0v792he_di" bpmnElement="Flow_0v792he">
+        <di:waypoint x="1060" y="420" />
+        <di:waypoint x="1130" y="420" />
+        <di:waypoint x="1130" y="470" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_15qn8pt_di" bpmnElement="Flow_15qn8pt">
+        <di:waypoint x="1180" y="510" />
+        <di:waypoint x="1222" y="510" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0vecvle_di" bpmnElement="Flow_0vecvle">
+        <di:waypoint x="350" y="375" />
+        <di:waypoint x="350" y="350" />
+        <di:waypoint x="460" y="350" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="379" y="332" width="53" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_09vznu0_di" bpmnElement="Flow_09vznu0">
+        <di:waypoint x="350" y="425" />
+        <di:waypoint x="350" y="460" />
+        <di:waypoint x="460" y="460" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="321" y="438" width="88" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1q0evgq_di" bpmnElement="Flow_1q0evgq">
+        <di:waypoint x="350" y="425" />
+        <di:waypoint x="350" y="580" />
+        <di:waypoint x="460" y="580" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="332" y="500" width="67" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0o11u9o_di" bpmnElement="Flow_0o11u9o">
+        <di:waypoint x="578" y="350" />
+        <di:waypoint x="670" y="350" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_01bh81r_di" bpmnElement="Flow_01bh81r">
+        <di:waypoint x="578" y="580" />
+        <di:waypoint x="670" y="580" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_11rzfrn_di" bpmnElement="Flow_11rzfrn">
+        <di:waypoint x="670" y="320" />
+        <di:waypoint x="560" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0wn8b33_di" bpmnElement="Flow_0wn8b33">
+        <di:waypoint x="670" y="430" />
+        <di:waypoint x="560" y="430" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1wjfejg_di" bpmnElement="Flow_1wjfejg">
+        <di:waypoint x="670" y="550" />
+        <di:waypoint x="560" y="550" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0u1grxx_di" bpmnElement="Flow_0u1grxx">
+        <di:waypoint x="510" y="620" />
+        <di:waypoint x="510" y="650" />
+        <di:waypoint x="880" y="650" />
+        <di:waypoint x="880" y="525" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0hczqty_di" bpmnElement="Flow_0hczqty">
+        <di:waypoint x="510" y="390" />
+        <di:waypoint x="510" y="400" />
+        <di:waypoint x="880" y="400" />
+        <di:waypoint x="880" y="475" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_17r2tso_di" bpmnElement="Flow_17r2tso">
+        <di:waypoint x="560" y="230" />
+        <di:waypoint x="880" y="230" />
+        <di:waypoint x="880" y="475" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0ts0als_di" bpmnElement="Flow_0ts0als">
+        <di:waypoint x="578" y="470" />
+        <di:waypoint x="670" y="470" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_16onkyh_di" bpmnElement="Flow_16onkyh">
+        <di:waypoint x="510" y="500" />
+        <di:waypoint x="510" y="520" />
+        <di:waypoint x="875" y="520" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
