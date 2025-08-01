@@ -15,22 +15,36 @@ public class SendFinalNotificationDelegate implements JavaDelegate {
     private static final Logger logger = LoggerFactory.getLogger(SendFinalNotificationDelegate.class);
     
     @Autowired
-    private NotificationService emailService;
+    private NotificationService notificationService; // ✅ Cambio aquí
     
     @Override
     public void execute(DelegateExecution execution) throws Exception {
         logger.info("Enviando notificación final - Process Instance: {}", execution.getProcessInstanceId());
         
-        String finalStatus = (String) execution.getVariable("finalStatus");
+        Boolean approved = (Boolean) execution.getVariable("approved");
         String requesterEmail = (String) execution.getVariable("requesterEmail");
         String requestId = (String) execution.getVariable("requestId");
         
-        if ("APPROVED".equals(finalStatus)) {
-            emailService.sendApprovalNotification(requesterEmail, requestId, execution);
-        } else {
-            emailService.sendRejectionNotification(requesterEmail, requestId, execution);
+        if (requesterEmail == null || requestId == null) {
+            logger.error("Faltan datos para enviar notificación - Email: {}, RequestId: {}", 
+                requesterEmail, requestId);
+            return;
         }
         
-        logger.info("Notificación final enviada. Estado: {}", finalStatus);
+        if (approved != null && approved) {
+            logger.info("Enviando notificación de APROBACIÓN");
+            notificationService.sendApprovalNotification(requesterEmail, requestId, execution);
+            execution.setVariable("finalStatus", "APPROVED");
+            
+        } else {
+            logger.info("Enviando notificación de RECHAZO");
+            notificationService.sendRejectionNotification(requesterEmail, requestId, execution);
+            execution.setVariable("finalStatus", "REJECTED");
+        }
+        
+        logger.info("Notificación final enviada a: {} - Estado: {}", 
+            requesterEmail, approved ? "APROBADA" : "RECHAZADA");
+        
+        execution.setVariable("processCompletedAt", java.time.LocalDateTime.now().toString());
     }
 }

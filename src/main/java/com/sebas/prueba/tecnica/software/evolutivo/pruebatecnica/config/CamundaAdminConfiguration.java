@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
  * Crea usuarios y grupos por defecto cuando la aplicación inicia.
  * Esto es necesario para poder acceder a las aplicaciones web de Camunda.
  *
- * @author Sebastian Rodriguez
+ * @author Sebastian Burgos
  * @version 1.0.0
  */
 @Component

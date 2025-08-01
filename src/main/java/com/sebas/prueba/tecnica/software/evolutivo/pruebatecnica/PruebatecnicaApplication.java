@@ -59,6 +59,7 @@ public class PruebatecnicaApplication  {
         log.info("📝 Tasklist en: http://localhost:8080/camunda/app/tasklist");
         log.info("🗄️ H2 Console en: http://localhost:8080/h2-console");
         log.info("👤 Usuario admin: admin / admin");
+        log.info("🗄️ H2 Console en: http://localhost:8080/process/create");
     }
 
     /**

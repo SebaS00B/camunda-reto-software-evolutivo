@@ -2,6 +2,8 @@ package com.sebas.prueba.tecnica.software.evolutivo.pruebatecnica.service;
 
 import com.sebas.prueba.tecnica.software.evolutivo.pruebatecnica.entities.PurchaseRequest;
 import com.sebas.prueba.tecnica.software.evolutivo.pruebatecnica.repository.PurchaseRequestRepository;
+
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,29 +33,72 @@ public class NotificationService {
     @Value("${app.base.url:http://localhost:8080}")
     private String baseUrl;
     
-    /**
-     * Método invocado por el SendReminderDelegate
-     */
-    public void sendReminderEmail(
-            String toEmail,
-            String requestId,
-            String taskName,
-            Double amount,
-            String description
-    ) {
-        // 1) Carga la entidad para poder construir el body completo
-        PurchaseRequest request = prRepository
-            .findByBusinessKey(requestId)
-            .orElseThrow(() -> new IllegalArgumentException("Request not found: " + requestId));
-
-        // 2) Incrementa y guarda el contador de recordatorios
-        Integer reminderCount = (request.getReminderCount() != null ? request.getReminderCount() : 0) + 1;
-        request.setReminderCount(reminderCount);
-        prRepository.save(request);
-
-        // 3) Dispara la notificación
-        sendReminderNotification(request, toEmail, taskName);
+/**
+ * Método requerido por SendReminderDelegate
+ * ✅ CORREGIDO: Usar java.math.BigDecimal
+ */
+public void sendReminderEmail(String toEmail, String requestId, String taskName, 
+                             java.math.BigDecimal amount, String description) {
+    try {
+        log.info("⏰ Enviando recordatorio - RequestId: {}, Task: {}", requestId, taskName);
+        
+        // Buscar la solicitud en la base de datos
+        PurchaseRequest request = prRepository.findByBusinessKey(requestId)
+            .orElse(null);
+        
+        if (request != null) {
+            // Incrementar contador de recordatorios
+            request.setReminderCount(request.getReminderCount() + 1);
+            prRepository.save(request);
+            
+            // Usar el método existente con datos completos
+            sendReminderNotification(request, toEmail, taskName);
+            
+        } else {
+            // Si no encontramos la solicitud, enviar recordatorio básico
+            log.warn("Solicitud no encontrada en BD: {}, enviando recordatorio básico", requestId);
+            sendBasicReminderEmail(toEmail, requestId, taskName, amount, description);
+        }
+        
+    } catch (Exception e) {
+        log.error("❌ Error enviando recordatorio: {}", e.getMessage(), e);
     }
+}
+
+/**
+ * Recordatorio básico cuando no se encuentra la solicitud en BD
+ * ✅ CORREGIDO: Usar java.math.BigDecimal
+ */
+private void sendBasicReminderEmail(String toEmail, String requestId, String taskName, 
+                                   java.math.BigDecimal amount, String description) {
+    String subject = String.format("⏰ Recordatorio: Solicitud pendiente - %s", requestId);
+    String body = String.format("""
+        Estimado aprobador,
+        
+        ⏰ RECORDATORIO: Tiene una solicitud pendiente de aprobación
+        
+        📋 DETALLES:
+        • Número: %s
+        • Tarea: %s
+        • Monto: $%s
+        • Descripción: %s
+        
+        🔗 Acceda al sistema para completar la aprobación:
+        %s/camunda/app/tasklist
+        
+        Saludos,
+        Sistema BPM - Software Evolutivo
+        """,
+        requestId,
+        taskName,
+        amount != null ? amount.toString() : "N/A",
+        description,
+        baseUrl
+    );
+    
+    sendEmail(toEmail, subject, body);
+}
+    
 /**
  * Invocado desde el SendFinalNotificationDelegate cuando el estado es APPROVED.
  */

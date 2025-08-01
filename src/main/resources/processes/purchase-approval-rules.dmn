@@ -14,7 +14,7 @@
       </input>
       <input id="InputClause_0wj2ptb">
         <inputExpression id="LiteralExpression_0rgf08n" typeRef="string">
-          <text>Urgencia</text>
+          <text>priority</text>
         </inputExpression>
       </input>
       <output id="Output_1" name="approvalRoute" typeRef="string" />
