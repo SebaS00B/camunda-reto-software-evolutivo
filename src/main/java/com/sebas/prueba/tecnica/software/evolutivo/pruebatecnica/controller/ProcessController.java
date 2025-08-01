@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
+
 import org.springframework.web.bind.annotation.*;
 
 import com.sebas.prueba.tecnica.software.evolutivo.pruebatecnica.dto.SupplierDto;
@@ -21,8 +21,10 @@ import com.sebas.prueba.tecnica.software.evolutivo.pruebatecnica.service.Externa
 import com.sebas.prueba.tecnica.software.evolutivo.pruebatecnica.service.NotificationService;
 import com.sebas.prueba.tecnica.software.evolutivo.pruebatecnica.service.PurchaseRequestService;
 
-import jakarta.validation.Valid;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,31 +59,104 @@ public class ProcessController {
 
         return "process/create-purchase-request";
     }
- @PostMapping("/start-api")
-    public ResponseEntity<?> startProcess(@RequestBody PurchaseRequest purchaseRequest) {
-        // 1) Generar businessKey si aún no existe
+@PostMapping("/start-api")
+public ResponseEntity<?> startProcess(@RequestBody Map<String, Object> requestData) {
+    try {
+        log.info("🔥 Iniciando proceso con datos: {}", requestData);
+        
+        // ✅ Crear PurchaseRequest desde el Map
+        PurchaseRequest purchaseRequest = new PurchaseRequest();
+        
+        // Mapear campos básicos
+        purchaseRequest.setRequesterName((String) requestData.get("requesterName"));
+        purchaseRequest.setRequesterEmail((String) requestData.get("requesterEmail"));
+        purchaseRequest.setDepartment((String) requestData.get("department"));
+        purchaseRequest.setDescription((String) requestData.get("description"));
+        
+        // ✅ Manejo seguro del monto
+        Object amountObj = requestData.get("totalAmount");
+        if (amountObj instanceof Number) {
+            purchaseRequest.setTotalAmount(BigDecimal.valueOf(((Number) amountObj).doubleValue()));
+        } else {
+            throw new IllegalArgumentException("totalAmount debe ser un número");
+        }
+        
+        purchaseRequest.setCurrency((String) requestData.get("currency"));
+        purchaseRequest.setSupplierName((String) requestData.get("supplierName"));
+        purchaseRequest.setSupplierEmail((String) requestData.get("supplierEmail"));
+        
+        // ✅ Manejo seguro de enums
+        String categoryStr = (String) requestData.get("category");
+        String priorityStr = (String) requestData.get("priority");
+        
+        try {
+            purchaseRequest.setCategory(PurchaseRequest.PurchaseCategory.valueOf(categoryStr));
+            purchaseRequest.setPriority(PurchaseRequest.Priority.valueOf(priorityStr));
+        } catch (IllegalArgumentException e) {
+            log.error("❌ Enum inválido - Category: {}, Priority: {}", categoryStr, priorityStr);
+            throw new IllegalArgumentException("Categoría o prioridad inválida: " + e.getMessage());
+        }
+        
+        // ✅ CORRECCIÓN DE FECHA: Manejo flexible
+        Object dueDateObj = requestData.get("dueDate");
+        if (dueDateObj != null) {
+            try {
+                String dueDateStr = dueDateObj.toString();
+                LocalDateTime dueDateTime;
+                
+                if (dueDateStr.contains("T")) {
+                    // Ya tiene formato LocalDateTime: "2025-08-02T23:59:59"
+                    dueDateTime = LocalDateTime.parse(dueDateStr);
+                } else {
+                    // Solo fecha: "2025-08-02" -> convertir a "2025-08-02T23:59:59"
+                    LocalDate dueDate = LocalDate.parse(dueDateStr);
+                    dueDateTime = dueDate.atTime(23, 59, 59);
+                }
+                
+                purchaseRequest.setDueDate(dueDateTime);
+                log.info("✅ Fecha procesada correctamente: {}", dueDateTime);
+                
+            } catch (Exception e) {
+                log.error("❌ Error procesando fecha: {}", dueDateObj, e);
+                throw new IllegalArgumentException("Formato de fecha inválido: " + dueDateObj);
+            }
+        }
+
+        // 1) Generar businessKey
         purchaseRequest.generateBusinessKey();
 
-        // 2) Guardar la entidad en la BD (aquí JPA asigna el id)
+        // 2) Guardar la entidad en la BD
         purchaseRequest = requestRepo.save(purchaseRequest);
+        log.info("✅ Solicitud guardada con ID: {}", purchaseRequest.getId());
 
-        // 3) Mapear a variables de Camunda
+        // 3) ✅ Mapear a variables de Camunda (nombres exactos para DMN)
         Map<String, Object> vars = new HashMap<>();
-        vars.put("businessKey",    purchaseRequest.getBusinessKey());
-        vars.put("requestId",    purchaseRequest.getBusinessKey());
-        vars.put("requesterName",  purchaseRequest.getRequesterName());
+        vars.put("businessKey", purchaseRequest.getBusinessKey());
+        vars.put("requestId", purchaseRequest.getBusinessKey());
+        vars.put("requesterName", purchaseRequest.getRequesterName());
         vars.put("requesterEmail", purchaseRequest.getRequesterEmail());
-        vars.put("department",     purchaseRequest.getDepartment());
-        vars.put("description",    purchaseRequest.getDescription());
-        vars.put("totalAmount",    purchaseRequest.getTotalAmount());
-        vars.put("currency",       purchaseRequest.getCurrency());
-        vars.put("category",       purchaseRequest.getCategory().name());
-        vars.put("priority",       purchaseRequest.getPriority().name());
-        vars.put("supplierName",   purchaseRequest.getSupplierName());
-        vars.put("supplierEmail",  purchaseRequest.getSupplierEmail());
-        vars.put("dueDate",        purchaseRequest.getDueDate());
+        vars.put("department", purchaseRequest.getDepartment());
+        vars.put("description", purchaseRequest.getDescription());
+        
+        // ✅ Variables para el DMN (nombres exactos)
+        vars.put("Monto", purchaseRequest.getTotalAmount().doubleValue());  // Para DMN
+        vars.put("Categoría", purchaseRequest.getCategory().name());        // Para DMN
+        vars.put("priority", purchaseRequest.getPriority().name());         // Para DMN
+        
+        // Variables adicionales
+        vars.put("totalAmount", purchaseRequest.getTotalAmount().doubleValue());
+        vars.put("currency", purchaseRequest.getCurrency());
+        vars.put("category", purchaseRequest.getCategory().name());
+        vars.put("supplierName", purchaseRequest.getSupplierName());
+        vars.put("supplierEmail", purchaseRequest.getSupplierEmail());
+        
+        if (purchaseRequest.getDueDate() != null) {
+            vars.put("dueDate", purchaseRequest.getDueDate());
+        }
 
-        // 4) Arrancar la instancia de proceso con key + businessKey
+        log.info("🔧 Variables para Camunda: {}", vars);
+
+        // 4) Arrancar la instancia de proceso
         ProcessInstance pi = runtimeService
             .startProcessInstanceByKey(
                 "purchase-request-process",
@@ -89,13 +164,13 @@ public class ProcessController {
                 vars
             );
 
-        log.info("🔥 Started process instance {}, businessKey={}", pi.getId(), purchaseRequest.getBusinessKey());
+        log.info("🚀 Proceso iniciado - ID: {}, BusinessKey: {}", pi.getId(), purchaseRequest.getBusinessKey());
 
-        // 5) Guardar el processInstanceId en la entidad
+        // 5) Guardar el processInstanceId
         purchaseRequest.setProcessInstanceId(pi.getId());
         requestRepo.save(purchaseRequest);
 
-        // --- 6) Enviar correo automáticamente ---
+        // 6) Enviar correo de confirmación
         try {
             notificationService.sendFinalNotification(
                 purchaseRequest,
@@ -104,75 +179,30 @@ public class ProcessController {
             );
             log.info("✅ Email enviado para solicitud {}", purchaseRequest.getBusinessKey());
         } catch (Exception e) {
-            log.error("❌ Error enviando email para solicitud {}: {}", purchaseRequest.getBusinessKey(), e.getMessage());
-            // Puedes decidir si quieres devolver error o continuar sin fallo
+            log.error("❌ Error enviando email: {}", e.getMessage());
         }
 
         // 7) Responder al frontend
-        Map<String, Object> resp = Map.of(
-            "success",           true,
-            "processInstanceId", pi.getId(),
-            "businessKey",       purchaseRequest.getBusinessKey()
-        );
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("processInstanceId", pi.getId());
+        response.put("businessKey", purchaseRequest.getBusinessKey());
+        response.put("message", "Solicitud creada exitosamente");
 
-        return ResponseEntity.ok(resp);
+        return ResponseEntity.ok(response);
+
+    } catch (Exception e) {
+        log.error("❌ Error creando solicitud: {}", e.getMessage(), e);
+        
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("success", false);
+        errorResponse.put("message", e.getMessage());
+        errorResponse.put("error", e.getClass().getSimpleName());
+        
+        return ResponseEntity.badRequest().body(errorResponse);
     }
-
-    @PostMapping("/start")
-    public String startProcess(@Valid @ModelAttribute PurchaseRequest request,
-                               BindingResult bindingResult,
-                               Model model) {
-
-        if (bindingResult.hasErrors()) {
-            log.warn("⚠️ Errores de validación en el formulario");
-            model.addAttribute("suppliers", externalServiceClient.getSuppliers());
-            model.addAttribute("currencies", externalServiceClient.getCurrencies());
-            model.addAttribute("categories", PurchaseRequest.PurchaseCategory.values());
-            model.addAttribute("priorities", PurchaseRequest.Priority.values());
-            return "process/create-purchase-request";
-        }
-
-        try {
-            log.info("🚀 Iniciando proceso Purchase Request para: {}", request.getRequesterName());
-
-            Map<String, Object> variables = new HashMap<>();
-            variables.put("requesterName", request.getRequesterName());
-            variables.put("requesterEmail", request.getRequesterEmail());
-            variables.put("department", request.getDepartment());
-            variables.put("description", request.getDescription());
-            variables.put("totalAmount", request.getTotalAmount().doubleValue());
-            variables.put("currency", request.getCurrency());
-            variables.put("category", request.getCategory().name());
-            variables.put("priority", request.getPriority().name());
-            variables.put("supplierName", request.getSupplierName());
-            variables.put("supplierEmail", request.getSupplierEmail());
-
-            ProcessInstance processInstance = runtimeService.startProcessInstanceByKey(
-                    "purchase-request-process",
-                    variables
-            );
-
-            log.info("✅ Proceso iniciado exitosamente: {}", processInstance.getId());
-
-            model.addAttribute("processInstanceId", processInstance.getId());
-            model.addAttribute("message", "¡Solicitud creada exitosamente!");
-            model.addAttribute("messageType", "success");
-
-            return "process/process-started";
-
-        } catch (Exception e) {
-            log.error("❌ Error iniciando proceso: {}", e.getMessage(), e);
-            model.addAttribute("message", "Error iniciando proceso: " + e.getMessage());
-            model.addAttribute("messageType", "error");
-
-            model.addAttribute("suppliers", externalServiceClient.getSuppliers());
-            model.addAttribute("currencies", externalServiceClient.getCurrencies());
-            model.addAttribute("categories", PurchaseRequest.PurchaseCategory.values());
-            model.addAttribute("priorities", PurchaseRequest.Priority.values());
-
-            return "process/create-purchase-request";
-        }
-    }
+}
+    
 
     @GetMapping("/list")
     public String listRequests(Model model) {

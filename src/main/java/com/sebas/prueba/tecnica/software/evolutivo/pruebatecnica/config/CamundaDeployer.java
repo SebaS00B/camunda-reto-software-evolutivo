@@ -16,6 +16,7 @@ public class CamundaDeployer {
     repositoryService.createDeployment()
       .name("Auto-deploy purchase-request-process")
       .addClasspathResource("processes/purchase-request-process.bpmn")
+      .addClasspathResource("processes/purchase-approval-rules.dmn")
       .deploy();
   }
 }

@@ -441,22 +441,39 @@
             return isValid;
         }
 
-        function submitForm() {
-    const $submitBtn = $('#submitBtn');
-    $submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Procesando...');
+        // ✅ CORRECCIÓN 1: Función submitForm() arreglada
+function submitForm() {
+     const $submitBtn = $('#submitBtn');
+    $submitBtn.prop('disabled', true)
+              .html('<i class="fas fa-spinner fa-spin me-2"></i>Procesando...');
 
+    // ✅ Extraer supplierEmail del select de proveedores
+    const supplierSelect = $('#supplier');
+    const selectedSupplier = supplierSelect.find('option:selected').text();
+    const supplierEmail = extractEmailFromSupplierText(selectedSupplier);
+
+    // ✅ CORRECCIÓN DE FECHA: Convertir a LocalDateTime
+    const requiredDateStr = $('#requiredDate').val(); // "2025-08-02"
+    const dueDate = requiredDateStr ? requiredDateStr + 'T23:59:59' : null; // "2025-08-02T23:59:59"
+
+    // 1) Construye el objeto “base”
     const formData = {
-        requesterName: $('#requestor').val(),              // 👈 CORRECTO
-        requesterEmail: $('#requestorEmail').val(),        // 👈 CORRECTO
-        department: $('#department').val(),                // 👈 CORRECTO
-        description: $('#description').val(),              // 👈 CORRECTO
-        totalAmount: parseFloat($('#totalAmount').val()),  // 👈 CORRECTO
-        currency: $('#currency').val(),                    // 👈 CORRECTO (USD, EUR, etc.)
-        category: $('#category').val(),                    // 👈 Debe ser uno de: OFFICE_SUPPLIES, IT_HARDWARE, ...
-        priority: $('#priority').val(),                    // 👈 LOW, NORMAL, HIGH, URGENT
-        supplierName: $('#supplier').val(),                // 👈 CORRECTO
-        supplierEmail: $('#supplierEmail').val()           // 👈 CORRECTO
+      totalAmount: parseFloat($('#totalAmount').val()),
+      category: $('#category').val(),
+      priority: $('#priority').val(),
+      requesterName: $('#requestor').val(),
+      requesterEmail: $('#requestorEmail').val(),
+      department: $('#department').val() || 'IT',
+      description: $('#description').val(),
+      currency: $('#currency').val(),
+      supplierName: $('#supplier').val(),
+      supplierEmail: supplierEmail,
+      dueDate: dueDate
     };
+
+    console.log('📤 Enviando datos:', formData);
+    console.assert(!isNaN(formData.totalAmount), 'totalAmount debe ser un número');
+
 
     $.ajax({
         url: '/process/start-api',
@@ -464,8 +481,9 @@
         contentType: 'application/json',
         data: JSON.stringify(formData),
         success: function (response) {
+            console.log('✅ Respuesta exitosa:', response);
             if (response.success) {
-                $('#modalRequestCode').text(response.requestCode || 'N/A');
+                $('#modalRequestCode').text(response.businessKey || 'N/A');
                 $('#modalProcessId').text(response.processInstanceId);
                 $('#confirmModal').modal('show');
             } else {
@@ -473,48 +491,101 @@
             }
         },
         error: function (xhr) {
-            const error = xhr.responseJSON || { message: 'Error interno del servidor' };
-            showAlert('danger', '❌ Error', error.message || JSON.stringify(error));
+            console.error('❌ Error completo:', xhr);
+            let errorMessage = 'Error interno del servidor';
+            
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMessage = xhr.responseJSON.message;
+            } else if (xhr.responseText) {
+                try {
+                    const errorObj = JSON.parse(xhr.responseText);
+                    errorMessage = errorObj.message || errorObj.error || xhr.responseText;
+                } catch (e) {
+                    errorMessage = xhr.responseText;
+                }
+            }
+            
+            showAlert('danger', '❌ Error', errorMessage);
         },
         complete: function () {
             $submitBtn.prop('disabled', false).html('<i class="fas fa-paper-plane me-2"></i>Iniciar Proceso');
         }
     });
 }
+// ✅ NUEVA FUNCIÓN: Extraer email del texto del proveedor
+function extractEmailFromSupplierText(supplierText) {
+    if (!supplierText) return 'noemail@supplier.com';
+    const match = supplierText.match(/\(([^)]+@[^)]+)\)/);
+    return match ? match[1] : 'noemail@supplier.com';
+}
 
 
-        function loadExternalData() {
-            // Cargar proveedores si el select está vacío
-            if ($('#supplier option').length <= 1) {
-                $.get('/api/v1/suppliers')
-                    .done(function(suppliers) {
-                        const $select = $('#supplier');
-                        $select.empty().append('<option value="">Seleccionar proveedor...</option>');
-                        suppliers.forEach(function(supplier) {
-                            $select.append(`<option value="${supplier.name}">${supplier.name} (${supplier.email})</option>`);
-                        });
-                    })
-                    .fail(function() {
-                        $('#supplier').html('<option value="">Error cargando proveedores</option>');
-                    });
-            }
+        // ✅ CORRECCIÓN 2: Mejorar carga de datos externos
+function loadExternalData() {
+    // Cargar proveedores
+    if ($('#supplier option').length <= 1) {
+        $.get('/api/v1/suppliers')
+            .done(function(suppliers) {
+                const $select = $('#supplier');
+                $select.empty().append('<option value="">Seleccionar proveedor...</option>');
+                suppliers.forEach(function(supplier) {
+                    $select.append(`<option value="${supplier.name}" data-email="${supplier.email}">${supplier.name} (${supplier.email})</option>`);
+                });
+            })
+            .fail(function() {
+                console.warn('⚠️ Error cargando proveedores, usando datos de ejemplo');
+                loadMockSuppliers();
+            });
+    }
 
-            // Cargar categorías si el select está vacío
-            if ($('#category option').length <= 1) {
-                $.get('/api/v1/categories')
-                    .done(function(categories) {
-                        const $select = $('#category');
-                        $select.empty().append('<option value="">Seleccionar categoría...</option>');
-                        categories.forEach(function(category) {
-                            $select.append(`<option value="${category.name}">${category.name}</option>`);
-                        });
-                    })
-                    .fail(function() {
-                        $('#category').html('<option value="">Error cargando categorías</option>');
-                    });
-            }
-        }
-
+           // Cargar categorías
+    if ($('#category option').length <= 1) {
+        $.get('/api/v1/categories')
+            .done(function(categories) {
+                const $select = $('#category');
+                $select.empty().append('<option value="">Seleccionar categoría...</option>');
+                categories.forEach(function(category) {
+                    $select.append(`<option value="${category.name}">${category.name}</option>`);
+                });
+            })
+            .fail(function() {
+                console.warn('⚠️ Error cargando categorías, usando datos de ejemplo');
+                loadMockCategories();
+            });
+    }
+}
+// ✅ NUEVA FUNCIÓN: Datos de ejemplo si falla la carga externa
+function loadMockSuppliers() {
+    const mockSuppliers = [
+        {name: 'TechCorp', email: 'ventas@techcorp.com'},
+        {name: 'OfficeMax', email: 'pedidos@officemax.com'},
+        {name: 'ConsultingPro', email: 'contacto@consultingpro.com'}
+    ];
+    
+    const $select = $('#supplier');
+    $select.empty().append('<option value="">Seleccionar proveedor...</option>');
+    mockSuppliers.forEach(function(supplier) {
+        $select.append(`<option value="${supplier.name}">${supplier.name} (${supplier.email})</option>`);
+    });
+}
+    
+   
+function loadMockCategories() {
+    const mockCategories = [
+        {name: 'OFFICE_SUPPLIES', displayName: 'Suministros de Oficina'},
+        {name: 'IT_HARDWARE', displayName: 'Hardware IT'},
+        {name: 'SOFTWARE', displayName: 'Software'},
+        {name: 'EQUIPMENT', displayName: 'Equipamiento'},
+        {name: 'STRATEGIC', displayName: 'Estratégico'},
+        {name: 'CONSULTING', displayName: 'Consultoría'}
+    ];
+    
+    const $select = $('#category');
+    $select.empty().append('<option value="">Seleccionar categoría...</option>');
+    mockCategories.forEach(function(category) {
+        $select.append(`<option value="${category.name}">${category.displayName}</option>`);
+    });
+}
         function showAlert(type, title, message) {
             const alertHtml = `
                 <div class="alert alert-${type} alert-dismissible fade show" role="alert">

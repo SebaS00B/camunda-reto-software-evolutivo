@@ -1,114 +1,77 @@
-<!-- File: src/main/resources/templates/reports/dashboard.html -->
+<!-- src/main/resources/templates/reports/dashboard.html -->
 <!DOCTYPE html>
-<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reportes Dashboard</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <title>Dashboard de Reportes</title>
+  <link 
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" 
+    rel="stylesheet"/>
 </head>
-<body class="bg-light">
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-  <div class="container">
-    <a class="navbar-brand" th:href="@{/process/dashboard}">BPM Consultant</a>
+<body>
+  <div class="container py-5">
+
+    <h1 class="mb-4">📊 Dashboard de Reportes</h1>
+
+    <!-- Métricas principales -->
+    <div class="row mb-5">
+      <div class="col-md-3">
+        <div class="card text-white bg-primary mb-3">
+          <div class="card-body">
+            <h5 class="card-title">Total Solicitudes</h5>
+            <p class="card-text display-6" th:text="${metrics.totalRequests}">0</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-white bg-warning mb-3">
+          <div class="card-body">
+            <h5 class="card-title">Pendientes</h5>
+            <p class="card-text display-6" th:text="${metrics.pendingRequests}">0</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-white bg-danger mb-3">
+          <div class="card-body">
+            <h5 class="card-title">Vencidas</h5>
+            <p class="card-text display-6" th:text="${metrics.overdueRequests}">0</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-white bg-success mb-3">
+          <div class="card-body">
+            <h5 class="card-title">Aprobadas</h5>
+            <p class="card-text display-6" th:text="${metrics.approvedRequests}">0</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reporte de auditoría -->
+    <h2 class="mb-3">📋 Historial de Auditoría</h2>
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>BusinessKey</th>
+          <th>Acción</th>
+          <th>Usuario</th>
+          <th>Fecha</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:each="entry : ${auditReport}">
+          <td th:text="${entry.id}">1</td>
+          <td th:text="${entry.businessKey}">PR-12345</td>
+          <td th:text="${entry.action}">CREATED</td>
+          <td th:text="${entry.username}">sebas</td>
+          <td th:text="${#dates.format(entry.timestamp, 'dd/MM/yyyy HH:mm')}">01/08/2025 16:00</td>
+        </tr>
+      </tbody>
+    </table>
+
   </div>
-</nav>
-<div class="container mt-4">
-    <h3>📊 Reportes Dashboard</h3>
-    <div class="row mt-3">
-        <div class="col-md-4">
-            <div class="card text-center mb-3">
-                <div class="card-body">
-                    <h5>Total Solicitudes</h5>
-                    <p th:text="${metrics.totalRequests}"></p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card text-center mb-3">
-                <div class="card-body">
-                    <h5>Pendientes</h5>
-                    <p th:text="${metrics.pendingRequests}"></p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card text-center mb-3">
-                <div class="card-body">
-                    <h5>Aprobadas</h5>
-                    <p th:text="${metrics.approvedRequests}"></p>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-md-4">
-            <div class="card text-center mb-3">
-                <div class="card-body">
-                    <h5>Rechazadas</h5>
-                    <p th:text="${metrics.rejectedRequests}"></p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card text-center mb-3">
-                <div class="card-body">
-                    <h5>Tiempo Promedio (h)</h5>
-                    <p th:text="${metrics.averageProcessingTime}"></p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card text-center mb-3">
-                <div class="card-body">
-                    <h5>Solicitudes Vencidas</h5>
-                    <p th:text="${metrics.overdueRequests}"></p>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card mb-3">
-                <div class="card-header">Monto Total Aprobado</div>
-                <div class="card-body">
-                    <h4 th:text="${metrics.totalApprovedAmount}"></h4>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card mb-3">
-                <div class="card-header">Distribución por Categoría</div>
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item" th:each="cat : ${metrics.categoryDistribution}">
-                        <span th:text="${cat.category}"></span> - <strong th:text="${cat.count}"></strong> (<span th:text="${cat.percentage}"></span>%)
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card mb-3">
-                <div class="card-header">Distribución por Departamento</div>
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item" th:each="dep : ${metrics.departmentDistribution}">
-                        <span th:text="${dep.department}"></span> - <strong th:text="${dep.count}"></strong> (<span th:text="${dep.percentage}"></span>%)
-                    </li>
-                </ul>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card mb-3">
-                <div class="card-header">Tareas Pendientes por Usuario</div>
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item" th:each="user : ${metrics.userTasks}">
-                        <span th:text="${user.userName}"></span> - <strong th:text="${user.taskCount}"></strong>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </div>
-</div>
 </body>
 </html>

@@ -4,12 +4,12 @@
     <decisionTable id="DecisionTable_190a7i6" hitPolicy="FIRST">
       <input id="Input_1">
         <inputExpression id="InputExpression_1" typeRef="number">
-          <text>Monto</text>
+          <text>totalAmount</text>
         </inputExpression>
       </input>
       <input id="InputClause_0n4i0eu">
         <inputExpression id="LiteralExpression_0wa9b2g" typeRef="string">
-          <text>Categoría</text>
+          <text>category</text>
         </inputExpression>
       </input>
       <input id="InputClause_0wj2ptb">
@@ -23,10 +23,10 @@
           <text>&lt;= 200</text>
         </inputEntry>
         <inputEntry id="UnaryTests_0fldqr3">
-          <text></text>
+          <text>-</text>
         </inputEntry>
         <inputEntry id="UnaryTests_0g81vhn">
-          <text></text>
+          <text>-</text>
         </inputEntry>
         <outputEntry id="LiteralExpression_11w9pyz">
           <text>"AUTO"</text>
@@ -34,13 +34,13 @@
       </rule>
       <rule id="DecisionRule_1bjylke">
         <inputEntry id="UnaryTests_0f9h2ue">
-          <text>&lt;= 500</text>
+          <text>[201..500]</text>
         </inputEntry>
         <inputEntry id="UnaryTests_1th8p63">
           <text>"OFFICE_SUPPLIES"</text>
         </inputEntry>
         <inputEntry id="UnaryTests_1lajezr">
-          <text></text>
+          <text>-</text>
         </inputEntry>
         <outputEntry id="LiteralExpression_1gleorn">
           <text>"AUTO"</text>
@@ -48,7 +48,7 @@
       </rule>
       <rule id="DecisionRule_025c8qw">
         <inputEntry id="UnaryTests_0vitkkb">
-          <text>&gt; 200 and &lt;=</text>
+          <text>[501..5000]</text>
         </inputEntry>
         <inputEntry id="UnaryTests_0iqyloc">
           <text>"OFFICE_SUPPLIES","SOFTWARE"</text>
@@ -62,13 +62,13 @@
       </rule>
       <rule id="DecisionRule_03pga1m">
         <inputEntry id="UnaryTests_01i67e6">
-          <text>&gt; 2000 and &lt;= 10000</text>
+          <text>[2001..10000]</text>
         </inputEntry>
         <inputEntry id="UnaryTests_0gpfaq7">
-          <text>"EQUIPMENT", "IT_HARDWARE"</text>
+          <text>"EQUIPMENT","IT_HARDWARE"</text>
         </inputEntry>
         <inputEntry id="UnaryTests_1t6gi0j">
-          <text>"NORMAL", "LOW"</text>
+          <text>"NORMAL","LOW"</text>
         </inputEntry>
         <outputEntry id="LiteralExpression_1k9o5zn">
           <text>"MANAGER"</text>
@@ -79,10 +79,10 @@
           <text>&gt; 10000</text>
         </inputEntry>
         <inputEntry id="UnaryTests_1pb7lan">
-          <text></text>
+          <text>-</text>
         </inputEntry>
         <inputEntry id="UnaryTests_07mkkm3">
-          <text></text>
+          <text>-</text>
         </inputEntry>
         <outputEntry id="LiteralExpression_1ebzlvv">
           <text>"CEO"</text>
@@ -93,10 +93,10 @@
           <text>&gt; 5000</text>
         </inputEntry>
         <inputEntry id="UnaryTests_1qcvtik">
-          <text>"STRATEGIC", "CONSULTING"</text>
+          <text>"STRATEGIC","CONSULTING"</text>
         </inputEntry>
         <inputEntry id="UnaryTests_0obnhe4">
-          <text></text>
+          <text>-</text>
         </inputEntry>
         <outputEntry id="LiteralExpression_0kg8yq7">
           <text>"CEO"</text>
@@ -104,13 +104,13 @@
       </rule>
       <rule id="DecisionRule_1xxsp63">
         <inputEntry id="UnaryTests_1fzvanm">
-          <text></text>
+          <text>-</text>
         </inputEntry>
         <inputEntry id="UnaryTests_073r384">
           <text></text>
         </inputEntry>
         <inputEntry id="UnaryTests_1jxgnxu">
-          <text></text>
+          <text>-</text>
         </inputEntry>
         <outputEntry id="LiteralExpression_07v8jvh">
           <text>"SUPERVISOR"</text>

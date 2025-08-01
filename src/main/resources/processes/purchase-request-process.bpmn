@@ -3,7 +3,9 @@
   <bpmn:process id="purchase-request-process" name="Purchase Request Process" isExecutable="true" camunda:historyTimeToLive="30">
     <bpmn:extensionElements />
     <bpmn:startEvent id="StartEvent_CreateRequest" name="CREAR SOLICITUD DE COMPRA" camunda:formKey="embedded:app:forms/create-purchase-request.html">
-      <bpmn:extensionElements />
+      <bpmn:extensionElements>
+        <camunda:executionListener expression="runtimeService.addEventListener(ExecutionListener.EVENTNAME_START, execution -&#62; {   log.info(&#34;🧐 Variables antes de la DMN: {}&#34;, execution.getVariables()); });" event="start" />
+      </bpmn:extensionElements>
       <bpmn:outgoing>Flow_07vvcc5</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:endEvent id="EndEvent_ProcessComplete" name="PROCESO&#10;COMPLETADO">
@@ -21,6 +23,11 @@
           <camunda:property name="Result Variable" value="approvalRoute" />
           <camunda:property name="Map Decision Result" value="singleEntry" />
         </camunda:properties>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="totalAmount">${totalAmount}</camunda:inputParameter>
+          <camunda:inputParameter name="category">${category}</camunda:inputParameter>
+          <camunda:inputParameter name="priority">${priority}</camunda:inputParameter>
+        </camunda:inputOutput>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0nlb4pn</bpmn:incoming>
       <bpmn:outgoing>Flow_1ii98yp</bpmn:outgoing>
@@ -43,17 +50,17 @@
     <bpmn:sequenceFlow id="Flow_082smf1" name="Auto Approval" sourceRef="Gateway_ApprovalRoute" targetRef="ServiceTask_AutoApproval">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${approvalRoute == 'AUTO'}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:userTask id="UserTask_SupervisorApproval" name="APROBACION&#10;SUPERVISOR" camunda:formKey="embedded:app:forms/supervisor-approval.html" camunda:assignee="" camunda:candidateGroups="supervisor" camunda:dueDate="${dateTime().plusDays(2).toDate()}" camunda:priority="">
+    <bpmn:userTask id="UserTask_SupervisorApproval" name="APROBACION&#10;SUPERVISOR" camunda:formKey="embedded:app:forms/supervisor-approval.html" camunda:assignee="" camunda:candidateGroups="supervisor" camunda:dueDate="${dateTime().plusDays(2).toDate()}">
       <bpmn:incoming>Flow_0vecvle</bpmn:incoming>
       <bpmn:incoming>Flow_11rzfrn</bpmn:incoming>
       <bpmn:outgoing>Flow_0hczqty</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:userTask id="UserTask_ManagerApproval" name="APROBACION&#10;GERENTE" camunda:formKey="embedded:app:forms/manager-approval.html" camunda:assignee="" camunda:candidateUsers="" camunda:candidateGroups="manager" camunda:dueDate="${dateTime().plusDays(3).toDate()}" camunda:followUpDate="" camunda:priority="">
+    <bpmn:userTask id="UserTask_ManagerApproval" name="APROBACION&#10;GERENTE" camunda:formKey="embedded:app:forms/manager-approval.html" camunda:assignee="" camunda:candidateUsers="" camunda:candidateGroups="manager" camunda:dueDate="${dateTime().plusDays(3).toDate()}" camunda:followUpDate="">
       <bpmn:incoming>Flow_09vznu0</bpmn:incoming>
       <bpmn:incoming>Flow_0wn8b33</bpmn:incoming>
       <bpmn:outgoing>Flow_16onkyh</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:userTask id="UserTask_CeoApproval" name="APROBACION CEO" camunda:formKey="embedded:app:forms/ceo-approval.html" camunda:candidateGroups="ceo" camunda:dueDate="${dateTime().plusDays(5).toDate()}" camunda:priority="">
+    <bpmn:userTask id="UserTask_CeoApproval" name="APROBACION CEO" camunda:formKey="embedded:app:forms/ceo-approval.html" camunda:candidateGroups="ceo" camunda:dueDate="${dateTime().plusDays(5).toDate()}">
       <bpmn:incoming>Flow_1q0evgq</bpmn:incoming>
       <bpmn:incoming>Flow_1wjfejg</bpmn:incoming>
       <bpmn:outgoing>Flow_0u1grxx</bpmn:outgoing>
@@ -61,7 +68,7 @@
     <bpmn:boundaryEvent id="BoundaryEvent_SupervisorTimer" name="Timer SUPERVISOR" cancelActivity="false" attachedToRef="UserTask_SupervisorApproval">
       <bpmn:outgoing>Flow_0o11u9o</bpmn:outgoing>
       <bpmn:timerEventDefinition id="TimerEventDefinition_041l8pp">
-        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P1D</bpmn:timeDuration>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1M</bpmn:timeDuration>
       </bpmn:timerEventDefinition>
     </bpmn:boundaryEvent>
     <bpmn:serviceTask id="ServiceTask_SupervisorReminder" name="RECORDATORIO &#10;SUPERVISOR" camunda:delegateExpression="${sendReminderDelegate}">
@@ -75,7 +82,7 @@
     <bpmn:boundaryEvent id="BoundaryEvent_ManagerTimer" name="Timer GERENTE" cancelActivity="false" attachedToRef="UserTask_ManagerApproval">
       <bpmn:outgoing>Flow_0ts0als</bpmn:outgoing>
       <bpmn:timerEventDefinition id="TimerEventDefinition_1562hod">
-        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P2D</bpmn:timeDuration>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT2M</bpmn:timeDuration>
       </bpmn:timerEventDefinition>
     </bpmn:boundaryEvent>
     <bpmn:serviceTask id="ServiceTask_CeoReminder" name="RECORDATORIO &#10;CEO" camunda:delegateExpression="${sendReminderDelegate}">
@@ -85,7 +92,7 @@
     <bpmn:boundaryEvent id="BoundaryEvent_CeoTimer" name="CeoTimer" cancelActivity="false" attachedToRef="UserTask_CeoApproval">
       <bpmn:outgoing>Flow_01bh81r</bpmn:outgoing>
       <bpmn:timerEventDefinition id="TimerEventDefinition_05v7j0b">
-        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">P3D</bpmn:timeDuration>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT3M</bpmn:timeDuration>
       </bpmn:timerEventDefinition>
     </bpmn:boundaryEvent>
     <bpmn:exclusiveGateway id="Gateway_ApprovalDecision" name="APROBADO?">
@@ -140,6 +147,18 @@
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="purchase-request-process">
+      <bpmndi:BPMNShape id="Event_11dd39z_di" bpmnElement="StartEvent_CreateRequest">
+        <dc:Bounds x="292" y="132" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="276" y="82" width="68" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1l5h5a3_di" bpmnElement="EndEvent_ProcessComplete">
+        <dc:Bounds x="1212" y="572" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1196" y="615" width="69" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_06smmxr_di" bpmnElement="ServiceTask_ValidateRequest">
         <dc:Bounds x="260" y="220" width="100" height="80" />
         <bpmndi:BPMNLabel />
@@ -200,18 +219,6 @@
         <dc:Bounds x="1080" y="550" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_11dd39z_di" bpmnElement="StartEvent_CreateRequest">
-        <dc:Bounds x="292" y="132" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="276" y="82" width="68" height="40" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_1l5h5a3_di" bpmnElement="EndEvent_ProcessComplete">
-        <dc:Bounds x="1212" y="572" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1196" y="615" width="69" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="BPMNShape_00cu1qk" bpmnElement="BoundaryEvent_CeoTimer">
         <dc:Bounds x="542" y="642" width="36" height="36" />
         <bpmndi:BPMNLabel>
@@ -236,9 +243,8 @@
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0nlb4pn_di" bpmnElement="Flow_0nlb4pn">
         <di:waypoint x="260" y="260" />
-        <di:waypoint x="160" y="260" />
-        <di:waypoint x="160" y="410" />
-        <di:waypoint x="200" y="410" />
+        <di:waypoint x="240" y="260" />
+        <di:waypoint x="240" y="370" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1ii98yp_di" bpmnElement="Flow_1ii98yp">
         <di:waypoint x="300" y="410" />

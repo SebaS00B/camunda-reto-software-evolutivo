@@ -53,13 +53,13 @@ public class PruebatecnicaApplication  {
         
         SpringApplication.run(PruebatecnicaApplication.class, args);
         
-        log.info("🎯 Aplicación iniciada exitosamente!");
+        log.info("   Aplicación iniciada exitosamente!");
         log.info("📊 Dashboard disponible en: http://localhost:8080");
         log.info("🔧 Camunda Cockpit en: http://localhost:8080/camunda");
         log.info("📝 Tasklist en: http://localhost:8080/camunda/app/tasklist");
         log.info("🗄️ H2 Console en: http://localhost:8080/h2-console");
         log.info("👤 Usuario admin: admin / admin");
-        log.info("🗄️ H2 Console en: http://localhost:8080/process/create");
+        log.info("🎯 Crear Solicitud: http://localhost:8080/process/create");
     }
 
     /**
