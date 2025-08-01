@@ -1,4 +1,4 @@
-package com.sebas.prueba.tecnica.software.evolutivo.pruebatecnica.service;
+package com.sebas.prueba.tecnica.software.evolutivo.pruebatecnica.delegate;
 
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.JavaDelegate;
@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 
 @Component("emailNotificationDelegate")
 public class EmailNotificationDelegate implements JavaDelegate {
-    
+
   @Autowired
   private JavaMailSender mailSender;
 
@@ -24,5 +24,10 @@ public class EmailNotificationDelegate implements JavaDelegate {
     msg.setSubject(subject);
     msg.setText(body);
     mailSender.send(msg);
+  }
+
+  public void sendAutoApprovalNotification(DelegateExecution execution) {
+    // TODO Auto-generated method stub
+    throw new UnsupportedOperationException("Unimplemented method 'sendAutoApprovalNotification'");
   }
 }

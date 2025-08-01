@@ -1,14 +1,18 @@
 package com.sebas.prueba.tecnica.software.evolutivo.pruebatecnica.service;
 
-
+import com.sebas.prueba.tecnica.software.evolutivo.pruebatecnica.entities.PurchaseRequest;
+import com.sebas.prueba.tecnica.software.evolutivo.pruebatecnica.repository.PurchaseRequestRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+import java.time.LocalDateTime;
 
-import com.sebas.prueba.tecnica.software.evolutivo.pruebatecnica.entities.PurchaseRequest;
+
 
 @Service
 @RequiredArgsConstructor
@@ -16,6 +20,7 @@ import com.sebas.prueba.tecnica.software.evolutivo.pruebatecnica.entities.Purcha
 public class NotificationService {
 
     private final JavaMailSender mailSender;
+    private final PurchaseRequestRepository prRepository;
 
     @Value("${app.mail.from:demo.bpm.consultant@gmail.com}")
     private String fromEmail;
@@ -25,13 +30,96 @@ public class NotificationService {
 
     @Value("${app.base.url:http://localhost:8080}")
     private String baseUrl;
+    
+    /**
+     * Método invocado por el SendReminderDelegate
+     */
+    public void sendReminderEmail(
+            String toEmail,
+            String requestId,
+            String taskName,
+            Double amount,
+            String description
+    ) {
+        // 1) Carga la entidad para poder construir el body completo
+        PurchaseRequest request = prRepository
+            .findByBusinessKey(requestId)
+            .orElseThrow(() -> new IllegalArgumentException("Request not found: " + requestId));
+
+        // 2) Incrementa y guarda el contador de recordatorios
+        Integer reminderCount = (request.getReminderCount() != null ? request.getReminderCount() : 0) + 1;
+        request.setReminderCount(reminderCount);
+        prRepository.save(request);
+
+        // 3) Dispara la notificación
+        sendReminderNotification(request, toEmail, taskName);
+    }
+/**
+ * Invocado desde el SendFinalNotificationDelegate cuando el estado es APPROVED.
+ */
+public void sendApprovalNotification(String toEmail, String requestId, DelegateExecution execution) {
+    // 1) Recuperar la entidad
+    PurchaseRequest request = prRepository.findByBusinessKey(requestId)
+        .orElseThrow(() -> new IllegalArgumentException("Request not found: " + requestId));
+
+    // 2) Marcar la fecha de aprobación
+    //    Si preferís usar la variable del proceso, podéis extraerla aquí:
+    Object approvedAtVar = execution.getVariable("processEndDate");
+    if (approvedAtVar instanceof LocalDateTime) {
+        request.setApprovedAt((LocalDateTime) approvedAtVar);
+    } else {
+        request.setApprovedAt(LocalDateTime.now());
+    }
+
+    // 3) Persistir el cambio
+    prRepository.save(request);
+
+    // 4) Enviar correo final de aprobación
+    sendFinalNotification(
+        request,
+        "APPROVED",
+        "Su solicitud ha sido aprobada satisfactoriamente."
+    );
+}
+
+/**
+ * Invocado desde SendFinalNotificationDelegate cuando finalStatus == "REJECTED"
+ */
+public void sendRejectionNotification(String toEmail, String requestId, DelegateExecution execution) {
+    // 1) Recuperar la entidad
+    PurchaseRequest request = prRepository.findByBusinessKey(requestId)
+        .orElseThrow(() -> new IllegalArgumentException("Request not found: " + requestId));
+
+    // 2) Marcar la fecha de "aprobación" (proceso final)
+    Object endDate = execution.getVariable("processEndDate");
+    if (endDate instanceof LocalDateTime) {
+        request.setApprovedAt((LocalDateTime) endDate);  // reutilizamos approvedAt como fin de proceso
+    } else {
+        request.setApprovedAt(LocalDateTime.now());
+    }
+
+    // 3) Acceder a la razón de rechazo (se guardó en rejectionReason)
+    String reason = request.getRejectionReason() != null
+        ? request.getRejectionReason()
+        : "No se proporcionó una razón de rechazo.";
+
+    // 4) Persistir cambios
+    prRepository.save(request);
+
+    // 5) Enviar correo final de rechazo
+    sendFinalNotification(
+        request,
+        "REJECTED",
+        reason
+    );
+}
 
     public void sendApprovalNotification(PurchaseRequest request, String approverEmail) {
         try {
             log.info("📧 Enviando notificación de aprobación a: {}", approverEmail);
 
             String subject = String.format("Nueva solicitud de compra para aprobar - %s", request.getBusinessKey());
-            String body = buildApprovalNotificationBody(request);
+            String body    = buildApprovalNotificationBody(request);
 
             sendEmail(approverEmail, subject, body);
 
@@ -45,7 +133,7 @@ public class NotificationService {
             log.info("⏰ Enviando recordatorio a: {}", approverEmail);
 
             String subject = String.format("Recordatorio: Solicitud pendiente - %s", request.getBusinessKey());
-            String body = buildReminderNotificationBody(request, taskName);
+            String body    = buildReminderNotificationBody(request, taskName);
 
             sendEmail(approverEmail, subject, body);
 
@@ -59,7 +147,7 @@ public class NotificationService {
             log.info("📬 Enviando notificación final a: {}", request.getRequesterEmail());
 
             String subject = String.format("Estado de su solicitud - %s", request.getBusinessKey());
-            String body = buildFinalNotificationBody(request, status, message);
+            String body    = buildFinalNotificationBody(request, status, message);
 
             sendEmail(request.getRequesterEmail(), subject, body);
 
@@ -130,6 +218,8 @@ public class NotificationService {
     }
 
     private String buildReminderNotificationBody(PurchaseRequest request, String taskName) {
+        long daysPending = java.time.Duration.between(request.getCreatedAt(), java.time.LocalDateTime.now()).toDays();
+
         return String.format("""
             Estimado aprobador,
             
@@ -155,7 +245,7 @@ public class NotificationService {
             request.getRequesterName(),
             request.getCurrency(),
             request.getTotalAmount(),
-            java.time.Duration.between(request.getCreatedAt(), java.time.LocalDateTime.now()).toDays(),
+            daysPending,
             baseUrl,
             request.getReminderCount()
         );
@@ -163,6 +253,7 @@ public class NotificationService {
 
     private String buildFinalNotificationBody(PurchaseRequest request, String status, String message) {
         String statusIcon = "APPROVED".equals(status) ? "✅" : "❌";
+        int processingHours = request.getProcessingTimeHours() != null ? request.getProcessingTimeHours() : 0;
         
         return String.format("""
             Estimado %s,
@@ -196,7 +287,7 @@ public class NotificationService {
             request.getTotalAmount(),
             request.getStatus().getDisplayName(),
             message,
-            request.getProcessingTimeHours() != null ? request.getProcessingTimeHours() : 0,
+            processingHours,
             baseUrl
         );
     }

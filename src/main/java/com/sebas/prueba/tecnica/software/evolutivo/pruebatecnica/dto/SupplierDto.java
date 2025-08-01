@@ -4,9 +4,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.List;
 
 /**
  * DTO para proveedores externos (JSON Placeholder API)
