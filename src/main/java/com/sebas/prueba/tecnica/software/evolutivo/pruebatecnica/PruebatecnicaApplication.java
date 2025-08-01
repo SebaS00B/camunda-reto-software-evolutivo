@@ -4,10 +4,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.spring.boot.starter.annotation.EnableProcessApplication;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.client.RestTemplate;
+
+import com.sebas.prueba.tecnica.software.evolutivo.pruebatecnica.config.AppServiceProperties;
 
 /**
  * 🚀 CAMUNDA BPM CONSULTANT DEMO - SOFTWARE EVOLUTIVO
@@ -31,6 +34,7 @@ import org.springframework.web.client.RestTemplate;
 @EnableProcessApplication
 @EnableAsync
 @EnableScheduling
+@EnableConfigurationProperties(AppServiceProperties.class)
 public class PruebatecnicaApplication  {
 
     public static void main(String[] args) {
