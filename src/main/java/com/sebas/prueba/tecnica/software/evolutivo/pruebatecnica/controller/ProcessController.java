@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.sebas.prueba.tecnica.software.evolutivo.pruebatecnica.dto.SupplierDto;
 import com.sebas.prueba.tecnica.software.evolutivo.pruebatecnica.entities.PurchaseRequest;
+import com.sebas.prueba.tecnica.software.evolutivo.pruebatecnica.repository.PurchaseRequestRepository;
 import com.sebas.prueba.tecnica.software.evolutivo.pruebatecnica.service.CurrencyService;
 import com.sebas.prueba.tecnica.software.evolutivo.pruebatecnica.service.ExternalServiceClient;
 import com.sebas.prueba.tecnica.software.evolutivo.pruebatecnica.service.PurchaseRequestService;
@@ -36,6 +37,7 @@ public class ProcessController {
     private final TaskService taskService;
     private final PurchaseRequestService purchaseRequestService;
     private final ExternalServiceClient externalServiceClient;
+    private final PurchaseRequestRepository requestRepo;
     @Autowired
     private CurrencyService currencyService;
 
@@ -54,38 +56,54 @@ public class ProcessController {
 
         return "process/create-purchase-request";
     }
-@PostMapping("/start-api")
-@ResponseBody
-public ResponseEntity<?> startProcessApi(@RequestBody @Valid PurchaseRequest request) {
-    try {
-        log.info("🚀 Iniciando proceso Purchase Request para: {}", request.getRequesterName());
+ @PostMapping("/start-api")
+  public ResponseEntity<?> startProcess(@RequestBody PurchaseRequest purchaseRequest) {
+    // 1) Generar businessKey si aún no existe
+    purchaseRequest.generateBusinessKey();
 
-        Map<String, Object> variables = new HashMap<>();
-        variables.put("requesterName", request.getRequesterName());
-        variables.put("requesterEmail", request.getRequesterEmail());
-        variables.put("department", request.getDepartment());
-        variables.put("description", request.getDescription());
-        variables.put("totalAmount", request.getTotalAmount().doubleValue());
-        variables.put("currency", request.getCurrency());
-        variables.put("category", request.getCategory().name());
-        variables.put("priority", request.getPriority().name());
-        variables.put("supplierName", request.getSupplierName());
-        variables.put("supplierEmail", request.getSupplierEmail());
+    // 2) Guardar la entidad en la BD (aquí JPA asigna el id)
+    purchaseRequest = requestRepo.save(purchaseRequest);
 
-        ProcessInstance instance = runtimeService.startProcessInstanceByKey("purchase-request-process", variables);
+    // 3) Mapear a variables de Camunda
+    Map<String, Object> vars = new HashMap<>();
+    vars.put("businessKey",    purchaseRequest.getBusinessKey());
+    vars.put("requesterName",  purchaseRequest.getRequesterName());
+    vars.put("requesterEmail", purchaseRequest.getRequesterEmail());
+    vars.put("department",     purchaseRequest.getDepartment());
+    vars.put("description",    purchaseRequest.getDescription());
+    vars.put("totalAmount",    purchaseRequest.getTotalAmount());
+    vars.put("currency",       purchaseRequest.getCurrency());
+    vars.put("category",       purchaseRequest.getCategory().name());
+    vars.put("priority",       purchaseRequest.getPriority().name());
+    vars.put("supplierName",   purchaseRequest.getSupplierName());
+    vars.put("supplierEmail",  purchaseRequest.getSupplierEmail());
+    vars.put("dueDate",        purchaseRequest.getDueDate());
 
-        return ResponseEntity.ok(Map.of(
-            "success", true,
-            "processInstanceId", instance.getId()
-        ));
-    } catch (Exception e) {
-        log.error("❌ Error iniciando proceso: {}", e.getMessage(), e);
-        return ResponseEntity.status(500).body(Map.of(
-            "success", false,
-            "error", e.getMessage()
-        ));
-    }
-}
+    // 4) Arrancar la instancia de proceso con key + businessKey
+    ProcessInstance pi = runtimeService
+        .startProcessInstanceByKey(
+            "purchase-request-process",
+            purchaseRequest.getBusinessKey(),
+            vars
+        );
+
+
+    log.info("🔥 Started process instance {}, businessKey={}",
+             pi.getId(), purchaseRequest.getBusinessKey());
+
+    // 5) Guardar el processInstanceId en la entidad
+    purchaseRequest.setProcessInstanceId(pi.getId());
+    requestRepo.save(purchaseRequest);
+
+    // 6) Responder al frontend
+    Map<String, Object> resp = Map.of(
+      "success",           true,
+      "processInstanceId", pi.getId(),
+      "businessKey",       purchaseRequest.getBusinessKey()
+    );
+
+    return ResponseEntity.ok(resp);
+  }
     @PostMapping("/start")
     public String startProcess(@Valid @ModelAttribute PurchaseRequest request,
                                BindingResult bindingResult,
@@ -167,26 +185,5 @@ public ResponseEntity<?> startProcessApi(@RequestBody @Valid PurchaseRequest req
         return "process/request-details";
     }
 
-    @GetMapping("/monitor")
-    public String processMonitor(Model model) {
-        log.info("📊 Mostrando monitor de procesos");
-
-        Long totalRequests = purchaseRequestService.getTotalRequests();
-        Long pendingRequests = purchaseRequestService.getRequestsByStatus(PurchaseRequest.RequestStatus.PENDING);
-        Long approvedRequests = purchaseRequestService.getRequestsByStatus(PurchaseRequest.RequestStatus.APPROVED);
-        Long rejectedRequests = purchaseRequestService.getRequestsByStatus(PurchaseRequest.RequestStatus.REJECTED);
-
-        model.addAttribute("totalRequests", totalRequests);
-        model.addAttribute("pendingRequests", pendingRequests);
-        model.addAttribute("approvedRequests", approvedRequests);
-        model.addAttribute("rejectedRequests", rejectedRequests);
-
-        List<Task> pendingTasks = taskService.createTaskQuery()
-                .processDefinitionKey("purchase-request-process")
-                .list();
-
-        model.addAttribute("pendingTasks", pendingTasks);
-
-        return "process/process-monitor";
-    }
+    
 }

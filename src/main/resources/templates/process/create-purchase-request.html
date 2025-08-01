@@ -229,30 +229,32 @@
                                         La fecha requerida debe ser futura
                                     </div>
                                 </div>
-                                <div class="col-md-4">
-                                    <label for="requestor" class="form-label">
-                                        <i class="fas fa-user me-1"></i>Solicitante *
-                                    </label>
-                                    <input type="text" 
-                                           class="form-control" 
-                                           id="requestor" 
-                                           name="requestor" 
-                                           required 
-                                           value="Demo User"
-                                           readonly>
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="requestorEmail" class="form-label">
-                                        <i class="fas fa-envelope me-1"></i>Email del Solicitante *
-                                    </label>
-                                    <input type="email" 
-                                           class="form-control" 
-                                           id="requestorEmail" 
-                                           name="requestorEmail" 
-                                           required 
-                                           value="demo@empresa.com"
-                                           readonly>
-                                </div>
+                               <div class="col-md-4">
+    <label for="requestor" class="form-label">
+        <i class="fas fa-user me-1"></i>Solicitante *
+    </label>
+    <input type="text" 
+           class="form-control" 
+           id="requestor" 
+           name="requestor" 
+           required 
+           cam-variable-name="requestor" 
+           cam-variable-type="String">
+</div>
+
+        <div class="col-md-4">
+            <label for="requestorEmail" class="form-label">
+                <i class="fas fa-envelope me-1"></i>Email del Solicitante *
+            </label>
+            <input type="email" 
+                class="form-control" 
+                id="requestorEmail" 
+                name="requestorEmail" 
+                required 
+                cam-variable-name="requestorEmail" 
+                cam-variable-type="String">
+        </div>
+
                             </div>
 
                             <div class="mb-3">
