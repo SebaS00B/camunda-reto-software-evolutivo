@@ -18,6 +18,7 @@ Este proyecto implementa un sistema completo de **gestión de solicitudes de com
 - Arquitectura limpia (Hexagonal)
 - APIs RESTful para interacción externa
 
+Psdt: Para hacer uso de los recordatorios por e-mail, en el archivo application.properties, se debe introducir un correo de preferencia Gmail, con la contraseña de aplicación.
 ---
 
 ## 🏗 Arquitectura y Stack Tecnológico
